@@ -1,0 +1,111 @@
+NULL=
+BASEDIR=.
+BINDIR=bin
+SRCDIR=$(BASEDIR)
+LIBQHTMLDIR=$(BASEDIR)\libqhtml
+EXE=.exe
+
+# 4996 - deprecated function, only needed for VS 2005 in which a lot
+#  of C standard functions that cause security risks (strcat, strcpy,
+#  printf etc.) were declared deprecated)
+# 4138 - */ found outside of comment
+# 4355 'this' : used in  base member initializer list
+CFLAGS = $(CFLAGS) /wd4138 /wd4996 /wd4355
+CFLAGS = $(CFLAGS) /D "WIN32" /D "__STD_C"
+CFLAGS = $(CFLAGS) /D "_MBCS" /D "_REENTRANT" /EHsc /W1
+CFLAGS = $(CFLAGS) /D "HAVE_QE_CONFIG_H"
+
+#CFLAGS = $(CFLAGS) /D "INLINE=static __inline"
+#CFLAGS = $(CFLAGS) /FIwinprefix.h
+
+CFLAGS = $(CFLAGS) /I$(SRCDIR) /I$(LIBQHTMLDIR)
+
+!if "$(DEBUG)"=="1"
+CFLAGS = $(CFLAGS) /MDd /Od /Zi
+!else
+CFLAGS = $(CFLAGS) /D "NDEBUG" /MD /Zi
+!endif
+
+#
+# Define linker flags
+#
+LD = link.exe
+LDFLAGS = $(LDFLAGS) /nologo /DEBUG
+
+LIBS = $(LIBS) user32.lib gdi32.lib shell32.lib
+
+AR       = lib.exe
+ARFLAGS  = $(ARFLAGS) /nologo
+
+QE_OBJS=\
+#    $(SRCDIR)\cfb.obj \
+#    $(SRCDIR)\cptoqe.obj \
+#    $(SRCDIR)\dired.obj \
+#    $(SRCDIR)\docbook.obj \
+#    $(SRCDIR)\fbfrender.obj \
+#    $(SRCDIR)\fbftoqe.obj \
+#    $(SRCDIR)\image.obj \
+#    $(SRCDIR)\kmaptoqe.obj \
+#    $(SRCDIR)\latex-mode.obj \
+#    $(SRCDIR)\libfbf.obj \
+#    $(SRCDIR)\ligtoqe.obj \
+#    $(SRCDIR)\mpeg.obj \
+#    $(SRCDIR)\shell.obj \
+#    $(SRCDIR)\tty.obj \
+#    $(SRCDIR)\unix.obj \
+#    $(SRCDIR)\video.obj \
+#    $(SRCDIR)\x11.obj \
+    $(SRCDIR)\libqhtml\css.obj \
+    $(SRCDIR)\libqhtml\html_style.obj \
+    $(SRCDIR)\libqhtml\cssparse.obj \
+    $(SRCDIR)\libqhtml\xmlparse.obj \
+    $(SRCDIR)\arabic.obj \
+    $(SRCDIR)\bufed.obj \
+    $(SRCDIR)\buffer.obj \
+    $(SRCDIR)\charset.obj \
+    $(SRCDIR)\charset_table.obj \
+    $(SRCDIR)\charsetmore.obj \
+    $(SRCDIR)\clang.obj \
+    $(SRCDIR)\cutils.obj \
+    $(SRCDIR)\display.obj \
+    $(SRCDIR)\hex.obj \
+    $(SRCDIR)\html.obj \
+    $(SRCDIR)\indic.obj \
+    $(SRCDIR)\input.obj \
+    $(SRCDIR)\list.obj \
+    $(SRCDIR)\qe.obj \
+    $(SRCDIR)\qeend.obj \
+    $(SRCDIR)\qfribidi.obj \
+    $(SRCDIR)\unicode_join.obj \
+    $(SRCDIR)\unihex.obj \
+    $(SRCDIR)\util.obj \
+    $(SRCDIR)\win32.obj \
+    $(SRCDIR)\xml.obj \
+    $(NULL)
+
+QE_EXE_NAME=qe.exe
+QE_PDB_NAME=qe.pdb
+
+all: $(BINDIR) $(BINDIR)\$(QE_EXE_NAME)
+
+$(SRCDIR)\libqhtml\html_style.c: $(SRCDIR)\libqhtml\html.css csstoqe$(EXE)
+	csstoqe$(EXE) html_style < $(SRCDIR)\libqhtml\html.css > $@
+
+csstoqe$(EXE): $(SRCDIR)\libqhtml\csstoqe.c
+	$(CC) $(CFLAGS) $(SRCDIR)\libqhtml\csstoqe.c
+
+$(BINDIR)\$(QE_EXE_NAME): $(QE_OBJS)
+    $(LD) $(LDFLAGS) $(LIBS) \
+        $(QE_OBJS) \
+        /PDB:$(BINDIR)\$(QE_PDB_NAME) \
+        /OUT:$(BINDIR)\$(QE_EXE_NAME)
+
+clean:
+    if exist $(BINDIR) rmdir /S /Q $(BINDIR)
+    del /s *.obj
+
+$(BINDIR):
+    if not exist $(BINDIR) mkdir $(BINDIR)
+
+.c.obj:
+       $(CC) $(CFLAGS) /Fo$@ /c $<

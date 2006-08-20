@@ -1,0 +1,9 @@
+config.mak
+config.h
+*.o
+*.exe
+qe
+qe_g
+fbftoqe
+fbffonts.c
+html2png
