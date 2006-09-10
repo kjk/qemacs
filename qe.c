@@ -463,6 +463,7 @@ void text_move_bol(EditState *s)
             break;
         s->offset = offset1;
     }
+    s->b->mark = s->offset;
 }
 
 void text_move_eol(EditState *s)
@@ -475,6 +476,7 @@ void text_move_eol(EditState *s)
             break;
         s->offset = offset1;
     }
+    s->b->mark = s->offset;
 }
 
 int isword(int c)
@@ -1337,6 +1339,7 @@ void text_write_char(EditState *s, int key)
         }
         s->offset += len;
     }
+    s->b->mark = s->offset;
 }
 
 /* XXX: may be better to move it into qe_key_process() */
@@ -3188,10 +3191,13 @@ void generic_text_display(EditState *s)
                 x += w;
                 w = -w;
             }
-            fill_rectangle(s->screen, x, y, w, h, QECOLOR_XOR);
-            /* invalidate line so that the cursor will be erased next time */
-            memset(&s->line_shadow[m->linec], 0xff, 
-                   sizeof(QELineShadow));
+            if (s->b->mark == s->offset) {
+                /* don't display cursor if we have selection */
+                fill_rectangle(s->screen, x, y, w, h, QECOLOR_XOR);
+                /* invalidate line so that the cursor will be erased next time */
+                memset(&s->line_shadow[m->linec], 0xff, 
+                       sizeof(QELineShadow));
+            }
         }
     }
     s->cur_rtl = (m->dirc == DIR_RTL);
@@ -4428,6 +4434,7 @@ void do_completion(EditState *s)
     }
  the_end:
     free_strings(&cs);
+    s->b->mark = s->offset;
 }
 
 /* space does completion only if a completion method is defined */

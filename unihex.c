@@ -109,7 +109,6 @@ static int unihex_display(EditState *s, DisplayState *ds, int offset)
         return -1;
 }
 
-
 void unihex_move_bol(EditState *s)
 {
     int pos;

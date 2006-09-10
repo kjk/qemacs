@@ -345,7 +345,6 @@ static int win_init(QEditScreen *s, int w, int h)
     DragAcceptFiles(win_ctx.hwnd, TRUE);
     ShowWindow(win_ctx.hwnd, SW_SHOW);
     UpdateWindow(win_ctx.hwnd);
-    
     return 0;
 }
 
@@ -445,7 +444,7 @@ void on_paint(HWND hwnd)
 
 static void win_invalidate(HWND hwnd)
 {
-    InvalidateRect(hwnd, NULL, FALSE);
+    //InvalidateRect(hwnd, NULL, FALSE);
     //UpdateWindow(hwnd);
 }
 
@@ -923,11 +922,29 @@ exit:
     CloseClipboard();
 }
 
+void win_cursor_at(QEditScreen *s, int x1, int y1, int w, int h)
+{
+    static int     prev_curs_h = -1;
+    static int     prev_curs_w = -1;
+
+    if ((prev_curs_h != h) || (prev_curs_w != w)) {
+        if (-1 != prev_curs_h)
+            DestroyCaret();
+        CreateCaret(win_ctx.hwnd, (HBITMAP) NULL, w, h);
+        prev_curs_h = h;
+        prev_curs_w = w;
+    }
+    SetCaretPos(x1, y1);
+    ShowCaret(win_ctx.hwnd); /* TODO: don't call it every time? */
+}
+
 static QEDisplay win32_dpy = {
     "win32",
     win_probe,
     win_init,
     win_close,
+    /* TODO: to implement hardware cursor */
+/*    win_cursor_at, */
     NULL,
     win_flush,
     win_is_user_input_pending,
