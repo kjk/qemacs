@@ -206,7 +206,7 @@ void hex_move_eol(EditState *s)
         s->offset = s->b->total_size;
 }
 
-void hex_move_left_right(EditState *s, int dir)
+void hex_move_left_right(EditState *s, int dir, int move_mark)
 {
     s->offset += dir;
     if (s->offset < 0)

@@ -28,7 +28,7 @@
    selection tracking is not good (selection should only
    be expanded on SHIFT-move, and not, as is currently,
    on every move */
-#define ALWAYS_SHOW_SELECTION 0
+#define ALWAYS_SHOW_SELECTION 1
 
 #ifdef WIN32  /* TODO: should be _MSVC */
 #include <sys/stat.h>
@@ -875,10 +875,16 @@ void do_up_down(EditState *s, int dir)
         s->mode->move_up_down(s, dir);
 }
 
-void do_left_right(EditState *s, int dir)
+void do_left_right_dont_move_mark(EditState *s, int dir)
 {
     if (s->mode->move_left_right)
-        s->mode->move_left_right(s, dir);
+        s->mode->move_left_right(s, dir, 0);
+}
+
+void do_left_right_move_mark(EditState *s, int dir)
+{
+    if (s->mode->move_left_right)
+        s->mode->move_left_right(s, dir, 1);
 }
 
 static int up_down_last_x = -1;
@@ -1091,7 +1097,7 @@ static int left_right_cursor_func(DisplayState *ds,
 }
 
 /* go to left or right in visual order */
-void text_move_left_right_visual(EditState *s, int dir)
+void text_move_left_right_visual(EditState *s, int dir, int move_mark)
 {
     LeftRightMoveContext m1, *m = &m1;
     DisplayState ds1, *ds = &ds1;
@@ -1146,6 +1152,8 @@ void text_move_left_right_visual(EditState *s, int dir)
             nextline = 1;
         }
     }
+    if (move_mark)
+        s->b->mark = s->offset;
 }
 
 /* mouse get cursor func */

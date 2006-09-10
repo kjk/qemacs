@@ -341,17 +341,10 @@ static int win_init(QEditScreen *s, int w, int h)
 
     SelectObject(win_ctx.hdc_orig, win_ctx.font);
 
-<<<<<<< .mine
-    /*    SetWindowPos (win_ctx.w, NULL, 0, 0, xsize, ysize, SWP_NOMOVE); */
-    DragAcceptFiles(win_ctx.w, TRUE);
-    ShowWindow(win_ctx.w, SW_SHOW);
-    UpdateWindow(win_ctx.w);
-=======
-    //    SetWindowPos (win_ctx.hwnd, NULL, 0, 0, xsize, ysize, SWP_NOMOVE);
+    /*    SetWindowPos (win_ctx.hwnd, NULL, 0, 0, xsize, ysize, SWP_NOMOVE); */
     DragAcceptFiles(win_ctx.hwnd, TRUE);
     ShowWindow(win_ctx.hwnd, SW_SHOW);
     UpdateWindow(win_ctx.hwnd);
->>>>>>> .r10
     
     return 0;
 }
@@ -602,22 +595,34 @@ LRESULT CALLBACK qe_wnd_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
                 push_key(KEY_HOME);
                 break;
             case 0x148:                /* UP */
-                push_key(KEY_UP);
+                if (shift)
+                    push_key(KEY_SHIFT_UP);
+                else
+                    push_key(KEY_UP);
                 break;
             case 0x149:                /* PGUP */
                 push_key(KEY_PAGEUP);
                 break;
             case 0x14B:                /* LEFT */
-                push_key(KEY_LEFT);
+                if (shift)
+                    push_key(KEY_SHIFT_LEFT);
+                else
+                    push_key(KEY_LEFT);
                 break;
             case 0x14D:                /* RIGHT */
-                push_key(KEY_RIGHT);
+                if (shift)
+                    push_key(KEY_SHIFT_RIGHT);
+                else
+                    push_key(KEY_RIGHT);
                 break;
             case 0x14F:                /* END */
                 push_key(KEY_END);
                 break;
             case 0x150:                /* DOWN */
-                push_key(KEY_DOWN);
+                if (shift)
+                    push_key(KEY_SHIFT_DOWN);
+                else
+                    push_key(KEY_DOWN);
                 break;
             case 0x151:                /* PGDN */
                 push_key(KEY_PAGEDOWN);

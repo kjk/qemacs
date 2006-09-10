@@ -364,6 +364,11 @@ enum QEEventType {
 #define KEY_CTRL_HOME   KEY_ESC1('h')
 #define KEY_CTRL_PAGEUP KEY_ESC1('i')
 #define KEY_CTRL_PAGEDOWN KEY_ESC1('j')
+#define KEY_SHIFT_UP    KEY_ESC1('E')
+#define KEY_SHIFT_DOWN  KEY_ESC1('F')
+#define KEY_SHIFT_LEFT  KEY_ESC1('G')
+#define KEY_SHIFT_RIGHT KEY_ESC1('H')
+/* TODO: KEY_SHIFT_PAGEUP, KEY_SHIFT_PAGEDOWN */
 #define KEY_SHIFT_TAB   KEY_ESC1('Z')   // kcbt
 #define KEY_HOME        KEY_ESC1(1)     // khome
 #define KEY_INSERT      KEY_ESC1(2)     // kich1
@@ -851,7 +856,7 @@ typedef struct ModeDef {
 
     /* common functions are defined here */
     void (*move_up_down)(EditState *, int);
-    void (*move_left_right)(EditState *, int);
+    void (*move_left_right)(EditState *, int, int);
     void (*move_bol)(EditState *);
     void (*move_eol)(EditState *);
     void (*move_word_left_right)(EditState *, int);
@@ -1194,7 +1199,7 @@ void set_color(unsigned int *buf, int len, int style);
 void do_char(EditState *s, int key);
 void do_switch_to_buffer(EditState *s, const char *bufname);;
 void do_set_mode(EditState *s, ModeDef *m, ModeSavedData *saved_data);
-void text_move_left_right_visual(EditState *s, int dir);
+void text_move_left_right_visual(EditState *s, int dir, int move_mark);
 void text_move_word_left_right(EditState *s, int dir);
 void text_move_up_down(EditState *s, int dir);
 void text_scroll_up_down(EditState *s, int dir);

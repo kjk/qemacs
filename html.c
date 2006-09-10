@@ -590,7 +590,7 @@ static int left_right_func(void *opaque, CSSBox *box, int x, int y)
 }
 
 /* go to left or right in visual order */
-static void html_move_left_right_visual(EditState *s, int dir)
+static void html_move_left_right_visual(EditState *s, int dir, int move_mark)
 {
     HTMLState *hs = s->mode_data;
     LeftRightMoveContext m1, *m = &m1;

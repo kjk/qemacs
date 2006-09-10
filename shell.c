@@ -1061,7 +1061,7 @@ static void do_shell(EditState *s, int force)
     shell_launched = 1;
 }
 
-void shell_move_left_right(EditState *e, int dir)
+void shell_move_left_right(EditState *e, int dir, int move_sel)
 {
     if (e->interactive) {
         ShellState *s = e->b->priv_data;
