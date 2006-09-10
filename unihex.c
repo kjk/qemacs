@@ -139,7 +139,7 @@ void unihex_move_left_right(EditState *s, int dir, int move_mark)
     }
 }
 
-void unihex_move_up_down(EditState *s, int dir)
+void unihex_move_up_down(EditState *s, int dir, int move_mark)
 {
     int pos;
 
@@ -148,6 +148,8 @@ void unihex_move_up_down(EditState *s, int dir)
     pos += dir * s->disp_width;
 
     s->offset = eb_goto_char(s->b, pos);
+    if (move_mark)
+        s->b->mark = s->offset;
 }
 
 ModeDef unihex_mode = {

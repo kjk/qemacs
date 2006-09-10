@@ -855,7 +855,7 @@ typedef struct ModeDef {
     int (*text_backward_offset)(EditState *, int);
 
     /* common functions are defined here */
-    void (*move_up_down)(EditState *, int);
+    void (*move_up_down)(EditState *, int, int);
     void (*move_left_right)(EditState *, int, int);
     void (*move_bol)(EditState *);
     void (*move_eol)(EditState *);
@@ -1201,7 +1201,7 @@ void do_switch_to_buffer(EditState *s, const char *bufname);;
 void do_set_mode(EditState *s, ModeDef *m, ModeSavedData *saved_data);
 void text_move_left_right_visual(EditState *s, int dir, int move_mark);
 void text_move_word_left_right(EditState *s, int dir);
-void text_move_up_down(EditState *s, int dir);
+void text_move_up_down(EditState *s, int dir, int move_mark);
 void text_scroll_up_down(EditState *s, int dir);
 void text_write_char(EditState *s, int key);
 void do_return(EditState *s);
@@ -1217,6 +1217,8 @@ void do_load_file_from_path(EditState *s, const char *filename);
 void do_goto_line(EditState *s, int line);
 void switch_to_buffer(EditState *s, EditBuffer *b);
 void do_up_down(EditState *s, int dir);
+void do_up_down_move_mark(EditState *s, int dir);
+void do_up_down_dont_move_mark(EditState *s, int dir);
 void display_mode_line(EditState *s);
 void text_mouse_goto(EditState *s, int x, int y);
 EditBuffer *new_yank_buffer(void);

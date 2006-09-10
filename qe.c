@@ -871,8 +871,19 @@ static int down_cursor_func(DisplayState *ds,
 
 void do_up_down(EditState *s, int dir)
 {
+    do_up_down_move_mark(s, dir);
+}
+
+void do_up_down_dont_move_mark(EditState *s, int dir)
+{
     if (s->mode->move_up_down)
-        s->mode->move_up_down(s, dir);
+        s->mode->move_up_down(s, dir, 0);
+}
+
+void do_up_down_move_mark(EditState *s, int dir)
+{
+    if (s->mode->move_up_down)
+        s->mode->move_up_down(s, dir, 1);
 }
 
 void do_left_right_dont_move_mark(EditState *s, int dir)
@@ -889,7 +900,7 @@ void do_left_right_move_mark(EditState *s, int dir)
 
 static int up_down_last_x = -1;
 
-void text_move_up_down(EditState *s, int dir)
+void text_move_up_down(EditState *s, int dir, int move_mark)
 {
     MoveContext m1, *m = &m1;
     DisplayState ds1, *ds = &ds1;
@@ -934,6 +945,8 @@ void text_move_up_down(EditState *s, int dir)
     ds->cursor_func = down_cursor_func;
     display1(ds);
     s->offset = m->offsetd;
+    if (move_mark)
+        s->b->mark = s->offset;
 }
 
 typedef struct {
@@ -1023,6 +1036,7 @@ void perform_scroll_up_down(EditState *s, int h)
     display1(ds);
 
     s->offset = m->offset_found;
+    s->b->mark = s->offset;
 }
 
 void text_scroll_up_down(EditState *s, int dir)

@@ -211,7 +211,7 @@ static void dired_mark(EditState *s, int mark)
     ch = dip->mark = mark;
     eb_write(s->b, dip->offset, &ch, 1);
 
-    text_move_up_down(s, 1);
+    text_move_up_down(s, 1, 1);
 }
 
 static void dired_sort(EditState *s, const char *sort_order)

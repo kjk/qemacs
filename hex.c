@@ -215,7 +215,7 @@ void hex_move_left_right(EditState *s, int dir, int move_mark)
         s->offset = s->b->total_size;
 }
 
-void hex_move_up_down(EditState *s, int dir)
+void hex_move_up_down(EditState *s, int dir, int move_mark)
 {
     s->offset += dir * s->disp_width;
     if (s->offset < 0)

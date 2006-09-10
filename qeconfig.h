@@ -6,8 +6,10 @@
 CmdDef basic_commands[] = {
     CMDV( KEY_DEFAULT, KEY_NONE, "self-insert-command", do_char, ' ', "*v")
     CMD_( KEY_CTRL('o'), KEY_NONE, "open-line", do_open_line, "*")
-    CMD1( KEY_CTRL('p'), KEY_UP, "previous-line", do_up_down, -1 )
-    CMD1( KEY_CTRL('n'), KEY_DOWN, "next-line", do_up_down, 1 )
+    CMD1( KEY_CTRL('p'), KEY_UP, "previous-line", do_up_down_move_mark, -1 )
+    CMD1( KEY_CTRL('n'), KEY_DOWN, "next-line", do_up_down_move_mark, 1 )
+    CMD1( KEY_SHIFT_UP, KEY_NONE, "previous-line-ext-sel", do_up_down_dont_move_mark, -1 )
+    CMD1( KEY_SHIFT_DOWN, KEY_NONE, "next-line-ext-sel", do_up_down_dont_move_mark, 1 )
     CMD1( KEY_CTRL('b'), KEY_LEFT, "backward-char", do_left_right_move_mark, -1)
     CMD1( KEY_CTRL('f'), KEY_RIGHT, "forward-char", do_left_right_move_mark, 1)
     CMD1( KEY_SHIFT_LEFT, KEY_NONE, "backward-char-ext-sel", do_left_right_dont_move_mark, -1)
@@ -197,10 +199,10 @@ CmdDef basic_commands[] = {
 CmdDef basic_commands[] = {
     CMDV( KEY_DEFAULT, KEY_NONE, "self-insert-command", do_char, ' ', "*v")
     CMD_( KEY_CTRL('o'), KEY_NONE, "open-line", do_open_line, "*")
-    CMD1( KEY_CTRL('p'), KEY_UP, "previous-line", do_up_down, -1 )
-    CMD1( KEY_CTRL('n'), KEY_DOWN, "next-line", do_up_down, 1 )
-    CMD1( KEY_CTRL('b'), KEY_LEFT, "backward-char", do_left_right, -1, 0)
-    CMD1( KEY_CTRL('f'), KEY_RIGHT, "forward-char", do_left_right, 1, 0 )
+    CMD1( KEY_CTRL('p'), KEY_UP, "previous-line", do_up_down_move_mark, -1 )
+    CMD1( KEY_CTRL('n'), KEY_DOWN, "next-line", do_up_down_move_mark, 1 )
+    CMD1( KEY_CTRL('b'), KEY_LEFT, "backward-char", do_left_right_move_mark, -1)
+    CMD1( KEY_CTRL('f'), KEY_RIGHT, "forward-char", do_left_right_move_mark, 1)
     CMD1( KEY_META('b'), KEY_CTRL_LEFT, "backward-word", do_word_right, -1 )
     CMD1( KEY_META('f'), KEY_CTRL_RIGHT, "forward-word", do_word_right, 1 )
 

@@ -542,7 +542,7 @@ static void html_move_up_down1(EditState *s, int dir, int xtarget)
     }
 }
 
-static void html_move_up_down(EditState *s, int dir)
+static void html_move_up_down(EditState *s, int dir, int move_mark)
 {
     HTMLState *hs = s->mode_data;
 

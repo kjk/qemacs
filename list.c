@@ -69,7 +69,7 @@ void list_toggle_selection(EditState *s)
         ch = ' ';
     eb_write(s->b, offset , &ch, 1);
 
-    text_move_up_down(s, 1);
+    text_move_up_down(s, 1, 1);
 }
 
 static int list_mode_init(EditState *s, ModeSavedData *saved_data)
