@@ -685,7 +685,11 @@ LRESULT CALLBACK qe_wnd_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_SETFOCUS:
+        ShowCaret(win_ctx.hwnd);
+        break;
+
     case WM_KILLFOCUS:
+        HideCaret(win_ctx.hwnd);
         break;
 
     case WM_LBUTTONDOWN:
@@ -927,15 +931,14 @@ void win_cursor_at(QEditScreen *s, int x1, int y1, int w, int h)
     static int     prev_curs_h = -1;
     static int     prev_curs_w = -1;
 
+    w = 2;
     if ((prev_curs_h != h) || (prev_curs_w != w)) {
         if (-1 != prev_curs_h)
             DestroyCaret();
         CreateCaret(win_ctx.hwnd, (HBITMAP) NULL, w, h);
         prev_curs_h = h;
-        prev_curs_w = w;
-    }
+        prev_curs_w = w;    }
     SetCaretPos(x1, y1);
-    ShowCaret(win_ctx.hwnd); /* TODO: don't call it every time? */
 }
 
 static QEDisplay win32_dpy = {
@@ -943,9 +946,7 @@ static QEDisplay win32_dpy = {
     win_probe,
     win_init,
     win_close,
-    /* TODO: to implement hardware cursor */
-/*    win_cursor_at, */
-    NULL,
+    win_cursor_at,
     win_flush,
     win_is_user_input_pending,
     win_fill_rectangle,
