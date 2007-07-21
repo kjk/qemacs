@@ -196,6 +196,16 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
     return result;
 }
 
+#if 1
+#define WIN_EDGE_LEFT 0
+#define WIN_EDGE_RIGHT 0
+#else
+#define WIN_EDGE_LEFT 8
+#define WIN_EDGE_RIGHT 8
+#endif
+#define WIN_EDGE_TOP 0
+#define WIN_EDGE_BOTTOM 0
+
 static int win_probe(void)
 {
     return 1;
@@ -251,8 +261,8 @@ static void create_double_buffer_bitmap(HWND hwnd)
     win_ctx.bmp_dx = rect_dx(&r);
     win_ctx.bmp_dy = rect_dy(&r);
 
-    qs->screen->width = rect_dx(&r);
-    qs->screen->height = rect_dy(&r);
+    qs->screen->width = rect_dx(&r) - (WIN_EDGE_LEFT + WIN_EDGE_RIGHT);
+    qs->screen->height = rect_dy(&r) - (WIN_EDGE_TOP + WIN_EDGE_BOTTOM);
 
     win_ctx.bmp_double_buf = CreateCompatibleBitmap(win_ctx.hdc_orig, win_ctx.bmp_dx, win_ctx.bmp_dy);
     if (!win_ctx.bmp_double_buf) {
@@ -333,6 +343,9 @@ static int win_init(QEditScreen *s, int w, int h)
     s->clip_y1 = 0;
     s->clip_x2 = s->width;
     s->clip_y2 = s->height;
+
+    xsize += WIN_EDGE_LEFT + WIN_EDGE_RIGHT;
+    ysize += WIN_EDGE_TOP + WIN_EDGE_BOTTOM;
 
     win_ctx.hwnd = CreateWindow("qemacs", "qemacs", WS_OVERLAPPEDWINDOW, 
                              0, 0, xsize, ysize, NULL, NULL, _hInstance, NULL);
