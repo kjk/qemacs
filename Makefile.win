@@ -1,3 +1,6 @@
+LD = link.exe
+AR       = lib.exe
+
 NULL=
 BASEDIR=.
 BINDIR=bin
@@ -12,6 +15,8 @@ EXE=.exe
 # 4355 'this' : used in  base member initializer list
 CFLAGS = $(CFLAGS) /wd4138 /wd4996 /wd4355
 CFLAGS = $(CFLAGS) /D "WIN32" /D "__STD_C"
+CFLAGS = $(CFLAGS) /D "_WIN32_WINNT=0x0500" /D "_CRT_SECURE_NO_DEPRECATE"
+
 CFLAGS = $(CFLAGS) /D "_MBCS" /D "_REENTRANT" /EHsc /W1
 CFLAGS = $(CFLAGS) /D "HAVE_QE_CONFIG_H"
 
@@ -26,21 +31,18 @@ CFLAGS = $(CFLAGS) /MDd /Od /Zi
 CFLAGS = $(CFLAGS) /D "NDEBUG" /MD /Zi
 !endif
 
-#
-# Define linker flags
-#
-LD = link.exe
 LDFLAGS = $(LDFLAGS) /nologo /DEBUG
 
-LIBS = $(LIBS) user32.lib gdi32.lib shell32.lib
+LIBS = $(LIBS) user32.lib gdi32.lib shell32.lib comdlg32.lib
 
-AR       = lib.exe
+#kernel32.lib winspool.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib
+
 ARFLAGS  = $(ARFLAGS) /nologo
 
 QE_OBJS=\
 #    $(SRCDIR)\cfb.obj \
 #    $(SRCDIR)\cptoqe.obj \
-#    $(SRCDIR)\dired.obj \
+     $(SRCDIR)\dired.obj \
 #    $(SRCDIR)\docbook.obj \
 #    $(SRCDIR)\fbfrender.obj \
 #    $(SRCDIR)\fbftoqe.obj \
@@ -72,10 +74,12 @@ QE_OBJS=\
     $(SRCDIR)\html.obj \
     $(SRCDIR)\indic.obj \
     $(SRCDIR)\input.obj \
+    $(SRCDIR)\json.obj \
     $(SRCDIR)\list.obj \
     $(SRCDIR)\qe.obj \
     $(SRCDIR)\qeend.obj \
     $(SRCDIR)\qfribidi.obj \
+    $(SRCDIR)\strbuf.obj \
     $(SRCDIR)\unicode_join.obj \
     $(SRCDIR)\unihex.obj \
     $(SRCDIR)\util.obj \
