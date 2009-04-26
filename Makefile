@@ -92,7 +92,7 @@ TARGETLIBS:=
 TARGETS+=qe$(EXE) qe-doc.html
 
 OBJS=qe.o charset.o buffer.o \
-     input.o unicode_join.o display.o util.o hex.o list.o 
+     input.o unicode_join.o display.o util.o hex.o list.o json.o strbuf.o
 
 ifndef CONFIG_FFMPEG
 OBJS+= cutils.o
