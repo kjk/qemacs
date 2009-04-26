@@ -23,27 +23,22 @@
 #include <errno.h>
 #include <assert.h>
 
-#include <strbuf.h>
+#include "strbuf.h"
 
 #if STDC_HEADERS
 # include <stdlib.h>
 # include <string.h>
 #endif /* STDC_HEADERS */
 
-#if HAVE_STRINGS_H
 # include <strings.h>
-#endif /* HAVE_STRINGS_H */
 
 #if HAVE_UNISTD_H
 # include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-#if !HAVE_STRNCASECMP && defined(_MSC_VER)
-  /* MSC has the version as _strnicmp */
+#if defined(_MSC_VER)
 # define strncasecmp _strnicmp
-#elif !HAVE_STRNCASECMP
-# error You do not have strncasecmp on your system.  
-#endif /* HAVE_STRNCASECMP */
+#endif
 
 #define hexdigit(x) (((x) <= '9') ? (x) - '0' : ((x) & 7) + 9)
 
@@ -271,7 +266,7 @@ void lh_table_free(lh_table *t)
 
 /* insert 'key'/'val' into hash table.
    Return 0 (FALSE) if failed, 1 (TRUE) if ok */
-static int lh_table_insert(lh_table *t, void *key, void *val)
+int lh_table_insert(lh_table *t, void *key, void *val)
 {
     unsigned long h;
     int           n;
@@ -846,7 +841,7 @@ int serialize_object(json_object* this, strbuf *pb)
     return strbuf_appendf(pb, " }");
 }
 
-static int serialize_generic(json_object *this, strbuf *buf)
+int serialize_generic(json_object *this, strbuf *buf)
 {
     int ok = 1;
 
