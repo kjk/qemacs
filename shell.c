@@ -1067,7 +1067,7 @@ void shell_move_left_right(EditState *e, int dir, int move_sel)
         ShellState *s = e->b->priv_data;
         tty_write(s, dir > 0 ? s->kcuf1 : s->kcub1, -1);
     } else {
-        text_move_left_right_visual(e, dir);
+        text_move_left_right_visual(e, dir, move_sel);
     }
 }
 
@@ -1081,13 +1081,13 @@ void shell_move_word_left_right(EditState *e, int dir)
     }
 }
 
-void shell_move_up_down(EditState *e, int dir)
+void shell_move_up_down(EditState *e, int dir, int move_mark)
 {
     if (e->interactive) {
         ShellState *s = e->b->priv_data;
         tty_write(s, dir > 0 ? s->kcud1 : s->kcuu1, -1);
     } else {
-        text_move_up_down(e, dir);
+        text_move_up_down(e, dir, move_mark);
     }
 }
 
