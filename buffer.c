@@ -1208,12 +1208,14 @@ int raw_load_buffer1(EditBuffer *b, FILE *f, int offset)
 
  void display_error(void)
 {
+#ifdef WIN32
     char *msgBuf = NULL;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
         (LPTSTR) &msgBuf, 0, NULL);
     printf("%s\n", msgBuf);
     LocalFree(msgBuf);
+#endif
 }
 
 int mmap_buffer(EditBuffer *b, const char *filename)
@@ -1255,7 +1257,7 @@ int mmap_buffer(EditBuffer *b, const char *filename)
     if (file_handle < 0)
         return -1;
     file_size = lseek(file_handle, 0, SEEK_END);
-    file_ptr = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fd, 0);
+    file_ptr = mmap(NULL, file_size, PROT_READ, MAP_SHARED, file_handle, 0);
     if ((void*)file_ptr == MAP_FAILED) {
         close(file_handle);
         return -1;
