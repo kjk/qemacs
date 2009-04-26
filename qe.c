@@ -30,10 +30,6 @@
    on every move */
 #define ALWAYS_SHOW_SELECTION 1
 
-#ifdef WIN32  /* TODO: should be _MSVC */
-#include <sys/stat.h>
-#include <windows.h> /* for MAX_PATH. TODO: figure out a better/portable way to get it */
-
 #define NOT_SET -1
 typedef struct QESettings {
     int     window_x;
@@ -46,6 +42,10 @@ typedef struct QESettings {
 } QESettings;
 
 QESettings settings;
+
+#ifdef WIN32  /* TODO: should be _MSVC */
+#include <sys/stat.h>
+#include <windows.h> /* for MAX_PATH. TODO: figure out a better/portable way to get it */
 
 int S_ISDIR(int mode)
 {
@@ -61,7 +61,12 @@ int S_ISREG(int mode)
     return 0;
 }
 
+#else
+#include <limits.h>
+#define  MAX_PATH    PATH_MAX
 #endif
+
+
 
 #include <assert.h>
 
