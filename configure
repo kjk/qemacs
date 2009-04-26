@@ -82,6 +82,9 @@ case $targetos in
   CYGWIN*)
     cygwin="yes"
     ;;
+  Darwin*)
+    macos="yes"
+    ;;
   *) ;;
 esac
 
@@ -177,9 +180,19 @@ if test "$cygwin" = "yes" ; then
     png="no"
     ffmpeg="no"
     html="no"
-    plugins="no"
     initcalls="no"
     exe=".exe"
+fi
+
+if test "$macos" = "yes" ; then
+    plugins="no"
+    x11="no"
+    xv="no"
+    xrender="no"
+    png="no"
+    ffmpeg="no"
+    html="no"
+    initcalls="no"
 fi
 
 # endianness : guess with cpu type. Should also use prefix
