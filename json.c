@@ -30,7 +30,9 @@
 # include <string.h>
 #endif /* STDC_HEADERS */
 
+#if !(defined(_MSC_VER))
 # include <strings.h>
+#endif
 
 #if HAVE_UNISTD_H
 # include <unistd.h>
