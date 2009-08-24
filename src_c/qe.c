@@ -6266,12 +6266,14 @@ void window_resize(EditState *s, int target_w, int target_h)
 
 /* mouse handling */
 
-#define MOTION_NONE       0
-#define MOTION_MODELINE   1
-#define MOTION_RSEPARATOR 2
-#define MOTION_TEXT       3
+typedef enum {
+	MOTION_NONE,
+	MOTION_MODELINE,
+	MOTION_RSEPARATOR,
+	MOTION_TEXT
+} MotionType;
 
-static int motion_type = MOTION_NONE;
+static MotionType motion_type = MOTION_NONE;
 static EditState *motion_target;
 static int motion_x, motion_y;
 
