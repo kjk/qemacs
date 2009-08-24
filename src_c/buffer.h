@@ -157,8 +157,8 @@ EditBuffer *eb_find(const char *name);
 EditBuffer *eb_find_file(const char *filename);
 
 void eb_set_charset(EditBuffer *b, QECharset *charset);
-int eb_nextc(EditBuffer *b, int offset, int *next_ptr);
-int eb_prevc(EditBuffer *b, int offset, int *prev_ptr);
+int eb_nextc(EditBuffer *b, int offset, int *next_offset);
+int eb_prevc(EditBuffer *b, int offset, int *prev_offset);
 int eb_goto_pos(EditBuffer *b, int line1, int col1);
 int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset);
 int eb_goto_char(EditBuffer *b, int pos);

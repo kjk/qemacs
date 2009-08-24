@@ -769,7 +769,7 @@ void eb_set_charset(EditBuffer *b, QECharset *charset)
 }
 
 /* XXX: change API to go faster */
-int eb_nextc(EditBuffer *b, int offset, int *next_ptr)
+int eb_nextc(EditBuffer *b, int offset, int *next_offset)
 {
     u8 buf[MAX_CHAR_BYTES], *p;
     int ch;
@@ -794,14 +794,14 @@ int eb_nextc(EditBuffer *b, int offset, int *next_ptr)
     }
 
 Exit:
-    if (next_ptr)
-        *next_ptr = offset;
+    if (next_offset)
+        *next_offset = offset;
     return ch;
 }
 
 /* XXX: only UTF8 charset is supported */
 /* XXX: suppress that */
-int eb_prevc(EditBuffer *b, int offset, int *prev_ptr)
+int eb_prevc(EditBuffer *b, int offset, int *prev_offset)
 {
     int ch;
     u8 buf[MAX_CHAR_BYTES], *q;
@@ -833,8 +833,8 @@ int eb_prevc(EditBuffer *b, int offset, int *prev_ptr)
         }
     }
  the_end:
-    if (prev_ptr)
-        *prev_ptr = offset;
+    if (prev_offset)
+        *prev_offset = offset;
     return ch;
 }
 

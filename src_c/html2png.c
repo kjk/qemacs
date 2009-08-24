@@ -83,9 +83,8 @@ void put_error(EditState *s, const char *fmt, ...)
     putc('\n', stderr);
 }
 
-
 /* dummy functions */
-int eb_nextc(EditBuffer *b, int offset, int *next_ptr)
+int eb_nextc(EditBuffer *b, int offset, int *next_offset)
 {
     return 0;
 }
