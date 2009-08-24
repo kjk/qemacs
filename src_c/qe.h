@@ -465,38 +465,10 @@ void log_nl(char *txt);
 
 #else /* QE_MODULE */
 
-#if (defined(__GNUC__) || defined(__TINYC__)) && defined(CONFIG_INIT_CALLS)
-
-/* make sure that the keyword is not disabled by glibc (TINYC case) */
-#undef __attribute__ 
-
-#if __GNUC__ < 3 || (__GNUC__ == 3 && __GNUC_MINOR__ < 3)
-/* same method as the linux kernel... */
-#define __init_call     __attribute__((unused, __section__ (".initcall.init")))
-#define __exit_call     __attribute__((unused, __section__ (".exitcall.exit")))
-#else
-#undef __attribute_used__
-#define __attribute_used__	__attribute__((__used__))
-#define __init_call	__attribute_used__ __attribute__((__section__ (".initcall.init")))
-#define __exit_call	__attribute_used__ __attribute__((__section__ (".exitcall.exit")))
-#endif
-
-#define qe_module_init(fn) \
-        static int (*__initcall_##fn)(void) __init_call = fn
-
-#define qe_module_exit(fn) \
-        static void (*__exitcall_##fn)(void) __exit_call = fn
-#else
-
-#define __init_call
-#define __exit_call
-
 #define qe_module_init(fn) \
         int module_ ## fn (void) { return fn(); }
 
 #define qe_module_exit(fn)
-
-#endif
 
 #endif /* QE_MODULE */
 

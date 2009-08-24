@@ -77,11 +77,6 @@ typedef struct HistoryEntry {
     char name[32];
 } HistoryEntry;
 
-#ifdef CONFIG_INIT_CALLS
-static int (*__initcall_first)(void) __init_call = NULL;
-static void (*__exitcall_first)(void) __exit_call = NULL;
-#endif
-
 static int get_line_height(QEditScreen *screen, int style_index);
 void print_at_byte(QEditScreen *screen,
                    int x, int y, int width, int height,
@@ -7171,30 +7166,6 @@ QEDisplay dummy_dpy = {
     NULL, /* no selection handling */
 };
 
-
-#if (defined(__GNUC__) || defined(__TINYC__)) && defined(CONFIG_INIT_CALLS)
-static inline void init_all_modules(void)
-{
-    int (*initcall)(void);
-    void **ptr;
-    
-    ptr = (void **)(void *)&__initcall_first;
-    for (;;) {
-        /* NOTE: if bound checking is on, a '\0' is inserted between
-           each initialized 'void *' */
-#if defined(__BOUNDS_CHECKING_ON)
-        ptr = (void **)((long)ptr + (2 * sizeof(void *)));
-#else
-        ptr++;
-#endif
-        initcall = *ptr;
-        if (initcall == NULL)
-            break;
-        initcall();
-    }
-}
-#else
-
 /* cannot use elf sections, so we initialize the modules manually */
 /* Should use a shell script to process objects and construct
  * initcall array:
@@ -7277,7 +7248,6 @@ static inline void init_all_modules(void)
     //module_mpeg_init(); /* mpeg.c(181) */
 #endif
 }
-#endif
 
 #ifdef CONFIG_DLL
 

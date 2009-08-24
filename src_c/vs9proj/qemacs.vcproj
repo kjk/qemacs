@@ -270,10 +270,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\qeend.c"
-				>
-			</File>
-			<File
 				RelativePath="..\qfribidi.c"
 				>
 			</File>
