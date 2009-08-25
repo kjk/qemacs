@@ -28,7 +28,7 @@
    selection tracking is not good (selection should only
    be expanded on SHIFT-move, and not, as is currently,
    on every move */
-#define ALWAYS_SHOW_SELECTION 1
+#define ALWAYS_SHOW_SELECTION 0
 
 #define NOT_SET -1
 typedef struct QESettings {
