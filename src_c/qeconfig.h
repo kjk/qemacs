@@ -105,7 +105,6 @@ CmdDef basic_commands[] = {
     CMD0( KEY_CTRLX('o'), KEY_NONE, "other-window", do_other_window)
     CMD0( KEY_CTRLX('n'), KEY_NONE, "next-window", do_other_window)
     CMD0( KEY_CTRLX('p'), KEY_NONE, "previous-window", do_previous_window)
-#ifndef CONFIG_TINY
     CMD1( KEY_CTRL('x'), KEY_UP, "find-window-up", do_find_window,
           KEY_UP)
     CMD1( KEY_CTRL('x'), KEY_DOWN, "find-window-down", do_find_window,
@@ -114,7 +113,6 @@ CmdDef basic_commands[] = {
           KEY_LEFT)
     CMD1( KEY_CTRL('x'), KEY_RIGHT, "find-window-right", do_find_window,
           KEY_RIGHT)
-#endif
     CMD1( KEY_CTRLX('0'), KEY_NONE, "delete-window", do_delete_window, 0)
     CMD0( KEY_CTRLX('1'), KEY_NONE, "delete-other-windows",
           do_delete_other_windows)
@@ -302,7 +300,6 @@ CmdDef basic_commands[] = {
     CMD0( KEY_CTRLX('o'), KEY_NONE, "other-window", do_other_window)
     CMD0( KEY_CTRLX('n'), KEY_NONE, "next-window", do_other_window)
     CMD0( KEY_CTRLX('p'), KEY_NONE, "previous-window", do_previous_window)
-#ifndef CONFIG_TINY
     CMD1( KEY_CTRL('x'), KEY_UP, "find-window-up", do_find_window,
           KEY_UP)
     CMD1( KEY_CTRL('x'), KEY_DOWN, "find-window-down", do_find_window,
@@ -311,7 +308,6 @@ CmdDef basic_commands[] = {
           KEY_LEFT)
     CMD1( KEY_CTRL('x'), KEY_RIGHT, "find-window-right", do_find_window,
           KEY_RIGHT)
-#endif
     CMD1( KEY_CTRLX('0'), KEY_NONE, "delete-window", do_delete_window, 0)
     CMD0( KEY_CTRLX('1'), KEY_NONE, "delete-other-windows",
           do_delete_other_windows)

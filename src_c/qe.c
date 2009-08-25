@@ -92,9 +92,7 @@ static void qe_key_process(int key);
 ModeSavedData *generic_mode_save_data(EditState *s);
 void generic_text_display(EditState *s);
 static void display1(DisplayState *s);
-#ifndef CONFIG_TINY
 static void save_selection(void);
-#endif
 static CompletionFunc find_completion(const char *name);
 static int dummy_dpy_init(QEditScreen *s, int w, int h);
 
@@ -1173,7 +1171,6 @@ void text_move_left_right_visual(EditState *s, int dir, int move_mark)
 }
 
 /* mouse get cursor func */
-#ifndef CONFIG_TINY
 
 /* called each time the cursor could be displayed */
 typedef struct {
@@ -1254,11 +1251,6 @@ void text_mouse_goto(EditState *s, int x, int y)
     if (s->mouse_force_highlight)
         s->force_highlight = 1;
 }
-#else
-void text_mouse_goto(EditState *s, int x, int y)
-{
-}
-#endif
 
 void do_char(EditState *s, int key)
 {
@@ -2841,7 +2833,6 @@ static int bidir_compute_attributes(TypeLink *list_tab, int max_size,
 }
 #endif
 
-#ifndef CONFIG_TINY
 /************************************************************/
 /* colorization handling */
 /* NOTE: only one colorization mode can be selected at a time for a
@@ -2941,12 +2932,6 @@ void set_colorize_func(EditState *s, ColorizeFunc colorize_func)
     }
 }
                           
-#else
-void set_colorize_func(EditState *s, ColorizeFunc colorize_func)
-{
-}
-#endif
-
 #define RLE_EMBEDDINGS_SIZE    128
 #define COLORED_MAX_LINE_SIZE  1024
 
@@ -3468,9 +3453,7 @@ static void parse_args(ExecCmdState *es)
             if (d->action.func != (void *)do_backspace)
                 s->compose_len = 0;
         }
-#ifndef CONFIG_TINY
         save_selection();
-#endif
         /* CG: Should save and restore ec context */
         qs->ec.function = d->name;
         call_func(d->action.func, es->nb_args, es->args, es->args_type);
@@ -4708,7 +4691,6 @@ void less_mode_init(void)
     qe_register_cmd_table(less_commands, "less");
 }
 
-#ifndef CONFIG_TINY
 /* insert a window to the left. Close all windows which are totally
    under it (XXX: should try to move them first */
 EditState *insert_window_left(EditBuffer *b, int width, int flags)
@@ -4772,7 +4754,6 @@ void do_find_window(EditState *s, int key)
     if (e)
         qs->active_window = e;
 }
-#endif
 
 /* give a good guess to the user for the next buffer */
 static EditBuffer *predict_switch_to_buffer(EditState *s)
@@ -6180,8 +6161,6 @@ int __is_user_input_pending(void)
 
 #endif
 
-#ifndef CONFIG_TINY
-
 void window_get_min_size(EditState *s, int *w_ptr, int *h_ptr)
 {
     QEmacsState *qs = s->qe_state;
@@ -6457,7 +6436,6 @@ void qe_mouse_event(QEEvent *ev)
         break;
     }
 }
-#endif
 
 /* put key in the unget buffer so that get_key() will return it */
 void unget_key(int key)
@@ -6484,7 +6462,6 @@ void qe_handle_event(QEEvent *ev)
         edit_display(qs);
         dpy_flush(qs->screen);
         break;
-#ifndef CONFIG_TINY
     case QE_BUTTON_PRESS_EVENT:
     case QE_BUTTON_RELEASE_EVENT:
     case QE_MOTION_EVENT:
@@ -6493,7 +6470,6 @@ void qe_handle_event(QEEvent *ev)
     case QE_SELECTION_CLEAR_EVENT:
         save_selection();
         goto redraw;
-#endif
     default:
         break;
     }
@@ -7213,7 +7189,6 @@ static inline void init_all_modules(void)
 #ifndef WIN32
     module_tty_init(); /* tty.c(567) */
 #endif
-#ifndef CONFIG_TINY
     module_charset_more_init(); /* charsetmore.c(324) */
     module_unihex_init(); /* unihex.c(184) */
     module_c_init(); /* clang.c(567) */
@@ -7226,7 +7201,6 @@ static inline void init_all_modules(void)
     module_shell_init(); /* shell.c(922) */
 #endif
     module_dired_init(); /* dired.c(369) */
-#endif
 
 #ifdef CONFIG_WIN32
     module_win32_init(); /* win32.c(504) */
@@ -7234,12 +7208,10 @@ static inline void init_all_modules(void)
 #ifdef CONFIG_X11
     module_x11_init(); /* x11.c(1704) */
 #endif
-#ifndef CONFIG_TINY
 #ifdef CONFIG_HTML
     module_html_init(); /* html.c(894) */
 #ifndef WIN32
     module_docbook_init(); /* docbook.c(53) */
-#endif
 #endif
 #endif
 #ifdef CONFIG_FFMPEG
@@ -7409,12 +7381,10 @@ void qe_init(void *opaque)
         /* CG: handle +linenumber */
     }
 
-#ifndef CONFIG_TINY
     if (is_player && optind >= argc) {
         /* if player, go to directory mode by default if no file selected */
         do_dired(s);
     }
-#endif
 
     put_status(s, "QEmacs %s - Press F1 for help", QE_VERSION);
 
