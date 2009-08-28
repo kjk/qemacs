@@ -63,6 +63,9 @@ endif
 
 OUTDIR=obj-$(CFG)
 
+QE_APP = $(OUTDIR)/qe$(EXE)
+QE_APP_G = $(OUTDIR)/qe_g$(EXE)
+
 DEFINES=-DHAVE_QE_CONFIG_H
 
 ########################################################
@@ -110,7 +113,7 @@ endif
 LIBS+=-lm
 
 TARGETLIBS:=
-TARGETS+=qe$(EXE) qe-doc.html
+TARGETS+=$(QE_APP) qe-doc.html
 
 OBJS=qe.o charset.o buffer.o \
      input.o unicode_join.o display.o util.o hex.o list.o json.o strbuf.o
@@ -179,15 +182,27 @@ DEFINES+= -I$(FFMPEG_SRCDIR)/libavcodec -I$(FFMPEG_SRCDIR)/libavformat
 TARGETS+= ffplay$(EXE)
 endif
 
-all: $(TARGETLIBS) $(TARGETS)
+all: inform ${OUTDIR} $(TARGETLIBS) $(TARGETS)
+
+$(OUTDIR):
+	@mkdir -p $(OUTDIR)
+
+inform:
+ifneq ($(CFG),rel)
+ifneq ($(CFG),dbg)
+	@echo "Invalid configuration: '"$(CFG)"'"
+	@echo "Valid configurations: rel, dbg (e.g. make CFG=dbg)"
+	@exit 1
+endif
+endif
 
 libqhtml: force
 	make -C libqhtml all
 
-qe_g$(EXE): $(OBJS) $(DEP_LIBS)
+$(QE_APP_G): $(OBJS) $(DEP_LIBS)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-qe$(EXE): qe_g$(EXE)
+$(QE_APP): ${QE_APP_G}
 	rm -f $@
 	cp $< $@
 	$(STRIP) $@
