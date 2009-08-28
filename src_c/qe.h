@@ -22,11 +22,15 @@
 
 #ifdef HAVE_QE_CONFIG_H
 #include "config.h"
+#else
+#ifdef _MSC_VER
+#include "config_msvc.h"
+#endif
 #endif
 
 /* OS specific defines */
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
 #define strcasecmp _stricmp
@@ -37,11 +41,7 @@
 #define DIR_SEP_STR  "/"
 #endif
 
-/************************/
-
 #include "cutils.h"
-
-/************************/
 
 /* low level I/O events */
 void set_read_handler(int fd, void (*cb)(void *opaque), void *opaque);

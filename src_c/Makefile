@@ -158,9 +158,6 @@ DEFINES+= -I$(FFMPEG_SRCDIR)/libavcodec -I$(FFMPEG_SRCDIR)/libavformat
 TARGETS+= ffplay$(EXE)
 endif
 
-# must be the last object
-OBJS+= qeend.o
-
 all: $(TARGETLIBS) $(TARGETS)
 
 libqhtml: force

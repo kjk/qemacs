@@ -1,9 +1,7 @@
 #ifndef CUTILS_H
 #define CUTILS_H
 
-#ifdef HAVE_QE_CONFIG_H
-#include "config.h"
-#endif
+/* Assumes qe.h has already been included */
 
 #include <stdlib.h>
 int strstart(const char *str, const char *val, const char **ptr);
