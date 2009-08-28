@@ -192,7 +192,7 @@ int eb_next_line(EditBuffer *b, int offset);
 
 void eb_register_data_type(EditBufferDataType *bdt);
 EditBufferDataType *eb_probe_data_type(const char *filename, int mode,
-                                       uint8_t *buf, int buf_size);
+                                       u8 *buf, int buf_size);
 void eb_set_data_type(EditBuffer *b, EditBufferDataType *bdt);
 void eb_invalidate_raw_data(EditBuffer *b);
 extern EditBufferDataType raw_data_type;

@@ -11,4 +11,3 @@
 #define CONFIG_HTML 1
 
 #define inline __inline
-typedef unsigned char uint8_t;

@@ -4887,7 +4887,7 @@ static void get_default_path(EditState *s, char *buf, int buf_size)
     splitpath(buf, buf_size, NULL, 0, filename);
 }
 
-static ModeDef *probe_mode(EditState *s, int mode, uint8_t *buf, int len)
+static ModeDef *probe_mode(EditState *s, int mode, u8 *buf, int len)
 {
     EditBuffer *b = s->b;
     ModeDef *m, *selected_mode;

@@ -28,6 +28,8 @@
 #endif
 #endif
 
+typedef unsigned char u8;
+
 /* OS specific defines */
 
 #ifdef _MSC_VER
@@ -60,7 +62,6 @@ void qe_kill_timer(QETimer *ti);
 /* main loop for Unix programs using liburlio */
 void url_main_loop(void (*init)(void *opaque), void *opaque);
 
-typedef unsigned char u8;
 struct EditState;
 
 #define MAXINT 0x7fffffff

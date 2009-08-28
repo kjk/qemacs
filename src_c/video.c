@@ -544,7 +544,7 @@ static void output_audio(VideoState *is, short *samples, int samples_size)
     }
 
     is->audio_out->oformat->write_packet(is->audio_out, 0, 
-                                         (uint8_t *)samples, samples_size, 0);
+                                         (u8 *)samples, samples_size, 0);
 }
 
 static void *audio_thread(void *arg)

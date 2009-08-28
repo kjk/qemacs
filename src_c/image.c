@@ -418,7 +418,7 @@ static void update_bmp(EditState *s)
     if (ib->alpha_info) {
         int x, y, state, linesize;
         unsigned int r, g, b, a, bg_r, bg_g, bg_b, v;
-        uint8_t *d, *d1;
+        u8 *d, *d1;
 
         ib1 = image_allocate(PIX_FMT_RGBA32, is->w, is->h);
         if (!ib1)
@@ -599,8 +599,8 @@ static int img_rotate(AVPicture *dst,
                       int w, int h)
 {
     int x, y, dlinesize, bpp;
-    uint8_t *d, *d1;
-    const uint8_t *s, *s1;
+    u8 *d, *d1;
+    const u8 *s, *s1;
 
     switch (pix_fmt) {
     case PIX_FMT_GRAY8:
