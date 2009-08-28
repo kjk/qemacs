@@ -1,3 +1,6 @@
+# Valid option to make:
+# CFG=[rel|dbg] - dbg if not given
+
 include config.mak
 
 # from configure
@@ -15,6 +18,19 @@ include config.mak
 #CONFIG_PNG_OUTPUT=yes
 #CONFIG_FFMPEG=yes
 
+#VPATH=src
+
+# cc-option
+# Usage: OP_CFLAGS+=$(call cc-option, -falign-functions=0, -malign-functions=0)
+
+cc-option = $(shell if $(CC) $(OP_CFLAGS) $(1) -S -o /dev/null -xc /dev/null \
+              > /dev/null 2>&1; then echo "$(1)"; else echo "$(2)"; fi ;)
+
+# make dbg default target if none provided
+ifeq ($(CFG),)
+CFG=dbg
+endif
+
 # currently fixes
 #
 # Define CONFIG_ALL_MODES to include all edit modes
@@ -29,19 +45,24 @@ CONFIG_UNICODE_JOIN=y
 #
 CONFIG_ALL_KMAPS=y
 
-CFLAGS:=-Wall -g $(CFLAGS) -funsigned-char
+CFLAGS := -g -Wall $(CFLAGS) -funsigned-char
 ifdef TARGET_GPROF
-CFLAGS+= -p
-LDFLAGS+= -p
+CFLAGS+=-p
+LDFLAGS+=-p
 endif
-ifdef TARGET_ARCH_X86
-#CFLAGS+=-fomit-frame-pointer
-ifeq ($(GCC_MAJOR),2)
-CFLAGS+=-m386 -malign-functions=0
-else
-CFLAGS+=-march=i386 -falign-functions=0
+
+ifeq ($(CFG),dbg)
+CFLAGS+=-O0
 endif
+
+ifeq ($(CFG),rel)
+CFLAGS += -Os -DNDEBUG
 endif
+
+#CFLAGS += -falign-functions=0
+
+OUTDIR=obj-$(CFG)
+
 DEFINES=-DHAVE_QE_CONFIG_H
 
 ########################################################

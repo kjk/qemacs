@@ -95,7 +95,7 @@ typedef struct DiredItem {
 static void dired_view_file(EditState *s, const char *filename);
 
 
-extern inline int dired_get_index(EditState *s) {
+static inline int dired_get_index(EditState *s) {
     return list_get_pos(s) - DIRED_HEADER;
 }
 
