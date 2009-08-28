@@ -24,8 +24,11 @@ $(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
 
+#clean:
+#	rm -f *~ *.o *.a *.exe csstoqe html_style.c docbook_style.c
+
 clean:
-	rm -f *~ *.o *.a *.exe csstoqe html_style.c docbook_style.c
+	rm -f *~ *.o *.a *.exe csstoqe docbook_style.c
 
 #
 # build default style sheet file
