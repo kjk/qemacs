@@ -25,7 +25,12 @@ CFLAGS += -Os ${INCS} -DNDEBUG
 endif
 
 CFLAGS += -std=c99 -DHAVE_C99
-CFLAGS += -DHAVE_QE_CONFIG_H -DCONFIG_ALL_KMAPS -DCONFIG_UNICODE_JOIN -DCONFIG_ALL_MODES
+CFLAGS += -DHAVE_QE_CONFIG_H -DCONFIG_ALL_KMAPS \
+	-DCONFIG_UNICODE_JOIN -DCONFIG_ALL_MODES
+
+CFLAGS += ${INCS}
+
+LDFLAGS += -lm
 
 QE_SRC = \
 	qe.c charset.c buffer.c input.c unicode_join.c \
@@ -39,5 +44,33 @@ ifdef CONFIG_X11
 QE_SRC += x11.c
 endif
 
-QE_OBJ = $(patsubst %.c $OUTDIR/QE_%.o, ${QE_SRC})
+QE_OBJ = $(patsubst %.c, ${OUTDIR}/QE_%.o, ${QE_SRC})
 QE_DEP = $(patsubst %.o, %.d, $(QE_OBJ))
+QE_APP = ${OUTDIR}/qe
+
+all: inform ${OUTDIR} ${QE_APP}
+
+$(OUTDIR):
+	@mkdir -p $(OUTDIR)
+
+$(QE_APP): ${QE_OBJ}
+	$(CC) -g -o $@ $^ ${LDFLAGS}
+
+$(OUTDIR)/QE_%.o: %.c
+	$(CC) -MD -c $(CFLAGS) -o $@ $<
+
+-include $(QE_DEP)
+
+inform:
+ifneq ($(CFG),rel)
+ifneq ($(CFG),dbg)
+	@echo "Invalid configuration: '"$(CFG)"'"
+	@echo "Valid configurations: rel, dbg (e.g. make CFG=dbg)"
+	@exit 1
+endif
+endif
+
+clean: force
+	rm -rf ${OUTDIR}
+
+force:
