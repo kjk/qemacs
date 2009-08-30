@@ -7403,7 +7403,11 @@ static int get_config_filename(char *buf, int buf_len)
 {
     /* TODO: this should be located either in the same directory
        as qe.exe or in APP_DATA\qe\ directory */
+#ifdef WIN32
     strcpy(buf, "c:\\tools\\qe-conf.txt");
+#else
+    strcpy(buf, "qe-conf.txt");
+#endif
     return 1;
 }
 
