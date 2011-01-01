@@ -9,22 +9,6 @@
 
 #define NB_LOGS_MAX 50
 
-#define PG_READ_ONLY    0x0001 /* the page is read only */
-#define PG_VALID_POS    0x0002 /* set if the nb_lines / col fields are up to date */
-#define PG_VALID_CHAR   0x0004 /* nb_chars is valid */
-#define PG_VALID_COLORS 0x0008 /* color state is valid */
-
-typedef struct Page {
-    int size; /* data size */ 
-    u8 *data;
-    int flags;
-    /* the following are needed to handle line / column computation */
-    int nb_lines; /* Number of '\n' in data */
-    int col;      /* Number of chars since the last '\n' */
-    /* the following is needed for char offset computation */
-    int nb_chars;
-} Page;
-
 #define DIR_LTR 0
 #define DIR_RTL 1
 

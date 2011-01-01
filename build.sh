@@ -3,5 +3,6 @@
 cd csharp
 ./build.sh
 
-#cd ../src_c
-#make
+cd ../cnew
+./build.sh
+

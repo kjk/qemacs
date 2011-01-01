@@ -28,8 +28,6 @@
 #endif
 #endif
 
-typedef unsigned char u8;
-
 /* OS specific defines */
 
 #ifdef _MSC_VER
