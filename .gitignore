@@ -7,5 +7,6 @@ qe_g
 fbftoqe
 fbffonts.c
 html2png
-obj-dbg/*
+obj-dbg/
 obj-rel/
+cnew/bin/
