@@ -330,18 +330,6 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
     dest->cur_page = NULL;
 }
 
-/* Insert 'size' bytes from 'buf' into 'b' at offset 'offset'. We must
-   have : 0 <= offset <= b->total_size */
-void eb_insert(EditBuffer *b, int offset, const void *buf, int size)
-{
-    eb_addlog(b, LOGOP_INSERT, offset, size);
-
-    eb_insert_lowlevel(b, offset, buf, size);
-
-    /* the page cache is no longer valid */
-    b->cur_page = NULL;
-}
-
 /* Append 'size' bytes from 'buf' at the end of 'b' */
 void eb_append(EditBuffer *b, const void *buf, int size)
 {
@@ -1189,23 +1177,6 @@ static void eb_io_stop(EditBuffer *b, int err)
 }
 #endif
 
-int raw_load_buffer1(EditBuffer *b, FILE *f, int offset)
-{
-    int len;
-    unsigned char buf[IOBUF_SIZE];
-
-    for (;;) {
-        len = fread(buf, 1, IOBUF_SIZE, f);
-        if (len < 0)
-            return -1;
-        if (len == 0)
-            break;
-        eb_insert(b, offset, buf, len);
-        offset += len;
-    }
-    return 0;
-}
-
  void display_error(void)
 {
 #ifdef WIN32
@@ -1298,20 +1269,6 @@ int mmap_buffer(EditBuffer *b, const char *filename)
     return 0;
 }
 
-static int raw_load_buffer(EditBuffer *b, FILE *f)
-{
-    int ret;
-    struct stat st;
-
-    if (stat(b->filename, &st) == 0 &&
-        st.st_size >= MIN_MMAP_SIZE) {
-        ret = mmap_buffer(b, b->filename);
-    } else {
-        ret = raw_load_buffer1(b, f, 0);
-    }
-    return ret;
-}
-
 static int raw_save_buffer(EditBuffer *b, const char *filename)
 {
     int fd, len, size;
@@ -1336,11 +1293,6 @@ static int raw_save_buffer(EditBuffer *b, const char *filename)
     }
     close(fd);
     return 0;
-}
-
-static void raw_close_buffer(EditBuffer *b)
-{
-    /* nothing to do */
 }
 
 /* Associate a buffer with a file and rename it to match the
@@ -1500,19 +1452,6 @@ int eb_next_line(EditBuffer *b, int offset)
     return offset;
 }
 
-/* buffer data type handling */
-
-void eb_register_data_type(EditBufferDataType *bdt)
-{
-    EditBufferDataType **lp;
-
-    lp = &first_buffer_data_type;
-    while (*lp != NULL)
-        lp = &(*lp)->next;
-    bdt->next = NULL;
-    *lp = bdt;
-}
-
 /* how we do backups of edited files. */
 #define BACKUP_NONE 0   /* no backup */
 #define BACKUP_TILDE 1  /* standard emacs way: append ~ to the name of the file */
@@ -1645,9 +1584,3 @@ EditBufferDataType raw_data_type = {
     raw_save_buffer,
     raw_close_buffer,
 };
-
-/* init buffer handling */
-void eb_init(void)
-{
-    eb_register_data_type(&raw_data_type);
-}

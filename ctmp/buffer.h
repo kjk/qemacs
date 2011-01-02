@@ -105,15 +105,6 @@ typedef struct EditBuffer {
 
 struct ModeProbeData;
 
-/* high level buffer type handling */
-typedef struct EditBufferDataType {
-    const char *name; /* name of buffer data type (text, image, ...) */
-    int (*buffer_load)(EditBuffer *b, FILE *f);
-    int (*buffer_save)(EditBuffer *b, const char *filename);
-    void (*buffer_close)(EditBuffer *b);
-    struct EditBufferDataType *next;
-} EditBufferDataType;
-
 /* the log buffer is used for the undo operation */
 /* header of log operation */
 typedef struct LogBuffer {
