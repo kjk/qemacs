@@ -4,7 +4,6 @@
 /* begin to mmap files from this size */
 #define MIN_MMAP_SIZE (1024*1024)
 
-#define MAX_PAGE_SIZE 4096
 //#define MAX_PAGE_SIZE 16
 
 #define NB_LOGS_MAX 50
@@ -46,15 +45,9 @@ typedef struct EditBufferCallbackList {
 #define BF_DIRED     0x0100  /* buffer is interactive dired */
 
 typedef struct EditBuffer {
-    Page *page_table;
-    int nb_pages;
     int mark;       /* current mark (moved with text) */
-    int total_size; /* total size of the buffer */
     int modified;
 
-    /* page cache */
-    Page *cur_page;
-    int cur_offset;
     /* if the file is kept open because it is mapped, its handle is there */
 #ifdef WIN32
     HANDLE file_handle;
