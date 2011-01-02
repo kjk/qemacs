@@ -25,22 +25,23 @@ public class Page
 
 /* high level buffer type handling */
 // TODO: make it an interface?
-public abstract class EditBufferDataType 
+public interface IEditBufferDataType 
 {
-    public string name; /* name of buffer data type (text, image, ...) */
-    public abstract int Load(EditBuffer b, Stream f);
-    public abstract int Save(EditBuffer b, string filename);
-    public abstract void Close(EditBuffer b);
+    string name { get; } /* name of buffer data type (text, image, ...) */
+    int Load(EditBuffer b, Stream f);
+    int Save(EditBuffer b, string filename);
+    void Close(EditBuffer b);
 }
 
-public class EditBufferDataTypeRaw : EditBufferDataType
+public class EditBufferDataTypeRaw : IEditBufferDataType
 {
     const int IOBUF_SIZE = 32768;
 
     public EditBufferDataTypeRaw()
     {
-        name = "raw";
     }
+
+    public string name { get { return "raw"; }}
 
     // TODO: in C return value indicates error (if < 0). Need to change to
     // exceptions
@@ -58,17 +59,17 @@ public class EditBufferDataTypeRaw : EditBufferDataType
     }
 
     // TODO: in C, uses mmap if file bigger than an mmap threshold
-    public override int Load(EditBuffer b, Stream f)
+    public int Load(EditBuffer b, Stream f)
     {
          return LoadFile(b, f, 0);
     }
 
-    public override int Save(EditBuffer b, string filename)
+    public int Save(EditBuffer b, string filename)
     {
         return 0;
     }
 
-    public override void Close(EditBuffer b)
+    public void Close(EditBuffer b)
     {
         // nothing to do
     }
@@ -78,7 +79,7 @@ public class EditBuffer
 {
     const int MAX_PAGE_SIZE = 4096;
 
-    public List<EditBufferDataType> DataTypes = new List<EditBufferDataType>();
+    public List<IEditBufferDataType> DataTypes = new List<IEditBufferDataType>();
     int total_size; /* total size of the buffer */
 
     /* Page *page_table;
@@ -95,7 +96,7 @@ public class EditBuffer
         RegisterDataType(new EditBufferDataTypeRaw());
     }
 
-    public void RegisterDataType(EditBufferDataType dt)
+    public void RegisterDataType(IEditBufferDataType dt)
     {
         DataTypes.Add(dt);
     }
