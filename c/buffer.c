@@ -30,6 +30,50 @@ extern EditBufferDataType raw_data_type;
 EditBufferDataType *first_buffer_data_type = NULL;
 
 /************************************************************/
+/* char offset computation */
+
+static int get_chars(u8 *buf, int size, QECharset *charset)
+{
+    int nb_chars, c;
+    u8 *buf_end, *buf_ptr;
+
+    if (charset != &charset_utf8)
+        return size;
+
+    nb_chars = 0;
+    buf_ptr = buf;
+    buf_end = buf + size;
+    while (buf_ptr < buf_end) {
+        c = *buf_ptr++;
+        if (c < 0x80 || c >= 0xc0)
+            nb_chars++;
+    }
+    return nb_chars;
+}
+
+static int goto_char(u8 *buf, int pos, QECharset *charset)
+{
+    int nb_chars, c;
+    u8 *buf_ptr;
+
+    if (charset != &charset_utf8)
+        return pos;
+
+    nb_chars = 0;
+    buf_ptr = buf;
+    for (;;) {
+        c = *buf_ptr;
+        if (c < 0x80 || c >= 0xc0) {
+            if (nb_chars >= pos)
+                break;
+            nb_chars++;
+        }
+        buf_ptr++;
+    }
+    return buf_ptr - buf;
+}
+
+/************************************************************/
 /* basic access to the edit buffer */
 
 static int pages_offset_in_cache(Pages *pages, int offset)
@@ -104,6 +148,55 @@ static void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
     }
 }
 
+void pages_delete(Pages *pages, int offset, int size)
+{
+    int n, len;
+    Page *del_start, *p;
+
+    pages->total_size -= size;
+    p = pages_find_page(pages, &offset);
+    n = 0;
+    del_start = NULL;
+    while (size > 0) {
+        len = p->size - offset;
+        if (len > size)
+            len = size;
+        if (len == p->size) {
+            if (!del_start)
+                del_start = p;
+            /* we cannot free if read only */
+            if (!(p->flags & PG_READ_ONLY))
+                free(p->data);
+            p++;
+            offset = 0;
+            n++;
+        } else {
+            update_page(p);
+            memmove(p->data + offset, p->data + offset + len, 
+                    p->size - offset - len);
+            p->size -= len;
+            p->data = realloc(p->data, p->size);
+            offset += len;
+            if (offset >= p->size) {
+                p++;
+                offset = 0;
+            }
+        }
+        size -= len;
+    }
+
+    /* now delete the requested pages */
+    if (n > 0) {
+        pages->nb_pages -= n;
+        memmove(del_start, del_start + n, 
+                (pages->page_table + pages->nb_pages - del_start) * sizeof(Page));
+        pages->page_table = realloc(pages->page_table, pages->nb_pages * sizeof(Page));
+    }
+
+    /* the page cache is no longer valid */
+    pages->cur_page = NULL;
+}
+
 /* internal function for insertion : 'buf' of size 'size' at the
    beginning of the page at page_index */
 static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
@@ -148,6 +241,7 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
     }
 }
 
+/* We must have : 0 <= offset <= pages->total_size */
 static void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
 {
     int len, len_out, page_index;
@@ -192,84 +286,19 @@ static void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int s
     pages->cur_page = NULL;
 }
 
-static Page *find_page(EditBuffer *b, int *offset_ptr)
-{
-    Pages *pages = &b->pages;
-    return pages_find_page(pages, offset_ptr);
-}
-
-/* Read or write in the buffer. We must have 0 <= offset < b->total_size */
-static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size1, int do_write)
-{
-    int size;
-
-    if ((offset + size1) > eb_total_size(b))
-        size1 = eb_total_size(b) - offset;
-
-    if (size1 <= 0)
-        return 0;
-
-    size = size1;
-    if (do_write)
-        eb_addlog(b, LOGOP_WRITE, offset, size);        
-
-    pages_rw(&b->pages, offset, buf, size, do_write);
-    return size1;
-}
-
-/* We must have: 0 <= offset < b->total_size */
-int eb_read(EditBuffer *b, int offset, void *buf, int size)
-{
-    return eb_rw(b, offset, buf, size, 0);
-}
-
-/* Note: eb_write can be used to insert after the end of the buffer */
-void eb_write(EditBuffer *b, int offset, void *buf_arg, int size)
-{
-    int len, left;
-    u8 *buf = buf_arg;
-    
-    len = eb_rw(b, offset, buf, size, 1);
-    left = size - len;
-    if (left > 0) {
-        offset += len;
-        buf += len;
-        eb_insert(b, offset, buf, left);
-    }
-}
-
-/* We must have : 0 <= offset <= b->total_size */
-static void eb_insert_lowlevel(EditBuffer *b, int offset,
-                               const u8 *buf, int size)
-{
-    pages_insert_lowlevel(&b->pages, offset, buf, size);
-}
-
-/* Insert 'size bytes of 'src' buffer from position 'src_offset' into
-   buffer 'dest' at offset 'dest_offset'. 'src' MUST BE DIFFERENT from
-   'dest' */
-void eb_insert_buffer(EditBuffer *dest, int dest_offset, 
-                      EditBuffer *src, int src_offset, 
-                      int size)
+void pages_insert_from(Pages *dest_pages, int dest_offset,
+                  Pages *src_pages, int src_offset, int size)
 {
     Page *p, *p_start, *q;
     int size_start, len, n, page_index;
-    Pages *dest_pages, *src_pages;
 
-    if (size == 0)
-        return;
-
-    eb_addlog(dest, LOGOP_INSERT, dest_offset, size);
-
-    dest_pages = &dest->pages;
-    src_pages = &src->pages;
     /* insert the data from the first page if it is not completely selected */
     p = pages_find_page(src_pages, &src_offset);
     if (src_offset > 0) {
         len = p->size - src_offset;
         if (len > size)
             len = size;
-        eb_insert_lowlevel(dest, dest_offset, p->data + src_offset, len);
+        pages_insert_lowlevel(dest_pages, dest_offset, p->data + src_offset, len);
         dest_offset += len;
         size -= len;
         p++;
@@ -343,12 +372,74 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
     dest_pages->cur_page = NULL;
 }
 
+void page_calc_chars(Page *p, QECharset *charset)
+{
+    if (!(p->flags & PG_VALID_CHAR)) {
+        p->flags |= PG_VALID_CHAR;
+        p->nb_chars = get_chars(p->data, p->size, charset);
+    }
+}
+
+/* Read or write in the buffer. We must have 0 <= offset < b->total_size */
+static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size1, int do_write)
+{
+    int size;
+
+    if ((offset + size1) > eb_total_size(b))
+        size1 = eb_total_size(b) - offset;
+
+    if (size1 <= 0)
+        return 0;
+
+    size = size1;
+    if (do_write)
+        eb_addlog(b, LOGOP_WRITE, offset, size);        
+
+    pages_rw(&b->pages, offset, buf, size, do_write);
+    return size1;
+}
+
+/* We must have: 0 <= offset < b->total_size */
+int eb_read(EditBuffer *b, int offset, void *buf, int size)
+{
+    return eb_rw(b, offset, buf, size, 0);
+}
+
+/* Note: eb_write can be used to insert after the end of the buffer */
+void eb_write(EditBuffer *b, int offset, void *buf_arg, int size)
+{
+    int len, left;
+    u8 *buf = buf_arg;
+    
+    len = eb_rw(b, offset, buf, size, 1);
+    left = size - len;
+    if (left > 0) {
+        offset += len;
+        buf += len;
+        eb_insert(b, offset, buf, left);
+    }
+}
+
+/* Insert 'size bytes of 'src' buffer from position 'src_offset' into
+   buffer 'dest' at offset 'dest_offset'. 'src' MUST BE DIFFERENT from
+   'dest' */
+void eb_insert_buffer(EditBuffer *dest, int dest_offset, 
+                      EditBuffer *src, int src_offset, 
+                      int size)
+{
+    if (size == 0)
+        return;
+
+    eb_addlog(dest, LOGOP_INSERT, dest_offset, size);
+    pages_insert_from(&dest->pages, dest_offset, &src->pages, src_offset, size);
+}
+
 /* Insert 'size' bytes from 'buf' into 'b' at offset 'offset'. We must
    have : 0 <= offset <= b->total_size */
 void eb_insert(EditBuffer *b, int offset, const void *buf, int size)
 {
     eb_addlog(b, LOGOP_INSERT, offset, size);
-    eb_insert_lowlevel(b, offset, buf, size);
+    pages_insert_lowlevel(&b->pages, offset, buf, size);
 }
 
 /* Append 'size' bytes from 'buf' at the end of 'b' */
@@ -360,57 +451,10 @@ void eb_append(EditBuffer *b, const void *buf, int size)
 /* We must have : 0 <= offset <= b->total_size */
 void eb_delete(EditBuffer *b, int offset, int size)
 {
-    int n, len;
-    Page *del_start, *p;
-    Pages *pages = &b->pages;
-
-    if (offset >= pages->total_size)
+    if (offset >= eb_total_size(b))
         return;
 
     eb_addlog(b, LOGOP_DELETE, offset, size);
-
-    pages->total_size -= size;
-    p = pages_find_page(pages, &offset);
-    n = 0;
-    del_start = NULL;
-    while (size > 0) {
-        len = p->size - offset;
-        if (len > size)
-            len = size;
-        if (len == p->size) {
-            if (!del_start)
-                del_start = p;
-            /* we cannot free if read only */
-            if (!(p->flags & PG_READ_ONLY))
-                free(p->data);
-            p++;
-            offset = 0;
-            n++;
-        } else {
-            update_page(p);
-            memmove(p->data + offset, p->data + offset + len, 
-                    p->size - offset - len);
-            p->size -= len;
-            p->data = realloc(p->data, p->size);
-            offset += len;
-            if (offset >= p->size) {
-                p++;
-                offset = 0;
-            }
-        }
-        size -= len;
-    }
-
-    /* now delete the requested pages */
-    if (n > 0) {
-        pages->nb_pages -= n;
-        memmove(del_start, del_start + n, 
-                (pages->page_table + pages->nb_pages - del_start) * sizeof(Page));
-        pages->page_table = realloc(pages->page_table, pages->nb_pages * sizeof(Page));
-    }
-
-    /* the page cache is no longer valid */
-    pages->cur_page = NULL;
 }
 
 /* flush the log */
@@ -977,50 +1021,6 @@ int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
     return line;
 }
 
-/************************************************************/
-/* char offset computation */
-
-static int get_chars(u8 *buf, int size, QECharset *charset)
-{
-    int nb_chars, c;
-    u8 *buf_end, *buf_ptr;
-
-    if (charset != &charset_utf8)
-        return size;
-
-    nb_chars = 0;
-    buf_ptr = buf;
-    buf_end = buf + size;
-    while (buf_ptr < buf_end) {
-        c = *buf_ptr++;
-        if (c < 0x80 || c >= 0xc0)
-            nb_chars++;
-    }
-    return nb_chars;
-}
-
-static int goto_char(u8 *buf, int pos, QECharset *charset)
-{
-    int nb_chars, c;
-    u8 *buf_ptr;
-
-    if (charset != &charset_utf8)
-        return pos;
-
-    nb_chars = 0;
-    buf_ptr = buf;
-    for (;;) {
-        c = *buf_ptr;
-        if (c < 0x80 || c >= 0xc0) {
-            if (nb_chars >= pos)
-                break;
-            nb_chars++;
-        }
-        buf_ptr++;
-    }
-    return buf_ptr - buf;
-}
-
 /* gives the byte offset of a given character, taking the charset into
    account */
 int eb_goto_char(EditBuffer *b, int pos)
@@ -1039,10 +1039,7 @@ int eb_goto_char(EditBuffer *b, int pos)
         p = pages->page_table;
         p_end = pages->page_table + pages->nb_pages;
         while (p < p_end) {
-            if (!(p->flags & PG_VALID_CHAR)) {
-                p->flags |= PG_VALID_CHAR;
-                p->nb_chars = get_chars(p->data, p->size, b->charset);
-            }
+            page_calc_chars(p, b->charset);
             if (pos < p->nb_chars) {
                 offset += goto_char(p->data, pos, b->charset);
                 break;
@@ -1079,10 +1076,7 @@ int eb_get_char_offset(EditBuffer *b, int offset)
                 goto the_end;
             if (offset < p->size)
                 break;
-            if (!(p->flags & PG_VALID_CHAR)) {
-                p->nb_chars = get_chars(p->data, p->size, b->charset);
-                p->flags |= PG_VALID_CHAR;
-            }
+            page_calc_chars(p, b->charset);
             pos += p->nb_chars;
             offset -= p->size;
             p++;
