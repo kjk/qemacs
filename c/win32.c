@@ -457,8 +457,8 @@ void on_paint(HWND hwnd)
 
 static void win_invalidate(HWND hwnd)
 {
-    //InvalidateRect(hwnd, NULL, FALSE);
-    //UpdateWindow(hwnd);
+    InvalidateRect(hwnd, NULL, FALSE);
+    UpdateWindow(hwnd);
 }
 
 void on_size(WPARAM wParam, LPARAM lParam)

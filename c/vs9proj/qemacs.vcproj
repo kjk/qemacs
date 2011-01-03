@@ -43,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\libqhtml&quot;;&quot;$(ProjectDir)\..&quot;;&quot;$(ProjectDir)\..\json-c&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;HAVE_QE_CONFIG_H;__STD_C;_REENTRANT;_MBCS;_WIN32_WINNT=0x0500;_CRT_SECURE_NO_DEPRECATE"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;__STD_C;_REENTRANT;_MBCS;_WIN32_WINNT=0x0500;_CRT_SECURE_NO_DEPRECATE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"

@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#include "qe.h"
 #include "cutils.h"
 
 #if !defined(CONFIG_NOCUTILS)
