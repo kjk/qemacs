@@ -32,29 +32,33 @@ EditBufferDataType *first_buffer_data_type = NULL;
 /************************************************************/
 /* basic access to the edit buffer */
 
+static int pages_offset_in_cache(Pages *pages, int offset)
+{
+    return (NULL != pages->cur_page) && 
+           (offset >= pages->cur_offset) && 
+           (offset < (pages->cur_offset + pages->cur_page->size));
+}
+
 /* find a page at a given offset */
 static Page *pages_find_page(Pages *pages, int *offset_ptr)
 {
     Page *p;
-    int offset;
 
-    offset = *offset_ptr;
-    if (pages->cur_page && offset >= pages->cur_offset && 
-        offset < pages->cur_offset + pages->cur_page->size) {
-        /* use the cache */
+    int offset = *offset_ptr;
+    if (pages_offset_in_cache(pages, offset)) {
         *offset_ptr -= pages->cur_offset;
         return pages->cur_page;
-    } else {
-        p = pages->page_table;
-        while (offset >= p->size) {
-            offset -= p->size;
-            p++;
-        }
-        pages->cur_page = p;
-        pages->cur_offset = *offset_ptr - offset;
-        *offset_ptr = offset;
-        return p;
     }
+
+    p = pages->page_table;
+    while (offset >= p->size) {
+        offset -= p->size;
+        p++;
+    }
+    pages->cur_page = p;
+    pages->cur_offset = *offset_ptr - offset;
+    *offset_ptr = offset;
+    return p;
 }
 
 static Page *find_page(EditBuffer *b, int *offset_ptr)
