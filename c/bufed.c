@@ -48,13 +48,13 @@ static void build_bufed_list(EditState *s)
     
     /* build buffer */
     b = s->b;
-    eb_delete(b, 0, b->total_size);
+    eb_delete(b, 0, eb_total_size(b));
     for (i = 0; i < hs->items.nb_items; i++) {
         eb_printf(b, " %-20s", hs->items.items[i]->str);
         b1 = eb_find(hs->items.items[i]->str);
         if (b1) {
             /* CG: should also display mode */
-            eb_printf(b, " %10d  %s", b1->total_size, b1->filename);
+            eb_printf(b, " %10d  %s", eb_total_size(b1), b1->filename);
         }
         eb_printf(b, "\n");
     }
@@ -228,7 +228,7 @@ static void bufed_refresh(EditState *s, int toggle)
 static void bufed_display_hook(EditState *s)
 {
     /* Prevent point from going beyond list */
-    if (s->offset && s->offset == s->b->total_size)
+    if (s->offset && s->offset == eb_total_size(s->b))
         do_up_down(s, -1);
 
     bufed_select(s, 1);

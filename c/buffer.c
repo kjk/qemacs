@@ -152,6 +152,7 @@ static void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int s
 {
     int len, len_out, page_index;
     Page *p = pages->page_table;
+    pages->total_size += size;
     if (offset > 0) {
         offset--;
         p = pages_find_page(pages, &offset);
@@ -202,8 +203,8 @@ static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size1, int do_write)
 {
     int size;
 
-    if ((offset + size1) > b->total_size)
-        size1 = b->total_size - offset;
+    if ((offset + size1) > eb_total_size(b))
+        size1 = eb_total_size(b) - offset;
 
     if (size1 <= 0)
         return 0;
@@ -241,8 +242,6 @@ void eb_write(EditBuffer *b, int offset, void *buf_arg, int size)
 static void eb_insert_lowlevel(EditBuffer *b, int offset,
                                const u8 *buf, int size)
 {
-
-    b->total_size += size;
     pages_insert_lowlevel(&b->pages, offset, buf, size);
 }
 
@@ -279,10 +278,8 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
     if (size == 0)
         return;
 
-    dest->total_size += size;
-
     /* cut the page at dest offset if needed */
-    if (dest_offset < dest->total_size) {
+    if (dest_offset < dest_pages->total_size) {
         q = pages_find_page(dest_pages, &dest_offset);
         page_index = q - dest_pages->page_table;
         if (dest_offset > 0) {
@@ -298,6 +295,8 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
     } else {
         page_index = dest_pages->nb_pages;
     }
+
+    dest_pages->total_size += size;
 
     /* compute the number of complete pages to insert */
     p_start = p;
@@ -355,7 +354,7 @@ void eb_insert(EditBuffer *b, int offset, const void *buf, int size)
 /* Append 'size' bytes from 'buf' at the end of 'b' */
 void eb_append(EditBuffer *b, const void *buf, int size)
 {
-    eb_insert(b, b->total_size, buf, size);
+    eb_insert(b, eb_total_size(b), buf, size);
 }
 
 /* We must have : 0 <= offset <= b->total_size */
@@ -363,15 +362,14 @@ void eb_delete(EditBuffer *b, int offset, int size)
 {
     int n, len;
     Page *del_start, *p;
-    Pages *pages;
+    Pages *pages = &b->pages;
 
-    if (offset >= b->total_size)
+    if (offset >= pages->total_size)
         return;
 
-    b->total_size -= size;
     eb_addlog(b, LOGOP_DELETE, offset, size);
-    pages = &b->pages;
 
+    pages->total_size -= size;
     p = pages_find_page(pages, &offset);
     n = 0;
     del_start = NULL;
@@ -511,7 +509,7 @@ void eb_free(EditBuffer *b)
     b->first_callback = NULL;
 
     b->save_log = 0;
-    eb_delete(b, 0, b->total_size);
+    eb_delete(b, 0, eb_total_size(b));
     eb_log_reset(b);
 
     /* suppress mmap file handle */
@@ -785,8 +783,8 @@ int eb_nextc(EditBuffer *b, int offset, int *next_offset)
     u8 buf[MAX_CHAR_BYTES], *p;
     int ch;
 
-    if (offset >= b->total_size) {
-        offset = b->total_size;
+    if (offset >= eb_total_size(b)) {
+        offset = eb_total_size(b);
         ch = '\n';
         goto Exit;
     }
@@ -935,7 +933,7 @@ int eb_goto_pos(EditBuffer *b, int line1, int col1)
         offset += p->size;
         p++;
     }
-    return b->total_size;
+    return eb_total_size(b);
 }
         
 int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
@@ -1033,8 +1031,8 @@ int eb_goto_char(EditBuffer *b, int pos)
 
     if (b->charset != &charset_utf8) {
         offset = pos;
-        if (offset > b->total_size)
-            offset = b->total_size;
+        if (offset > eb_total_size(b))
+            offset = eb_total_size(b);
     } else {
         offset = 0;
         pages = &b->pages;
@@ -1069,8 +1067,8 @@ int eb_get_char_offset(EditBuffer *b, int offset)
     /* if no decoding function in charset, it means it is 8 bit only */
     if (b->charset_state.decode_func == NULL) {
         pos = offset;
-        if (pos > b->total_size)
-            pos = b->total_size;
+        if (pos > eb_total_size(b))
+            pos = eb_total_size(b);
     } else {
         pages = &b->pages;
         p = pages->page_table;
@@ -1295,7 +1293,7 @@ int mmap_buffer(EditBuffer *b, const char *filename)
         return -1;
     }
     b->pages.page_table = p;
-    b->total_size = file_size;
+    b->pages.total_size = file_size;
     b->pages.nb_pages = n;
     size = file_size;
     ptr = file_ptr;
@@ -1340,12 +1338,12 @@ static int raw_save_buffer(EditBuffer *b, const char *filename)
     if (fd < 0)
         return -1;
 
-    size = b->total_size;
+    size = eb_total_size(b);
     while (size > 0) {
         len = size;
         if (len > IOBUF_SIZE)
             len = IOBUF_SIZE;
-        eb_read(b, b->total_size - size, buf, len);
+        eb_read(b, eb_total_size(b) - size, buf, len);
         len = write(fd, buf, len);
         if (len < 0) {
             close(fd);
@@ -1382,7 +1380,7 @@ void eb_printf(EditBuffer *b, const char *fmt, ...)
     va_start(ap, fmt);
     len = vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
-    eb_insert(b, b->total_size, buf, len);
+    eb_insert(b, eb_total_size(b), buf, len);
 }
 
 /* pad current line with spaces so that it reaches column n */
@@ -1390,7 +1388,7 @@ void eb_line_pad(EditBuffer *b, int n)
 {
     int offset, i;
     i = 0;
-    offset = b->total_size;
+    offset = eb_total_size(b);
     for (;;) {
         if (eb_prevc(b, offset, &offset) == '\n')
             break;
@@ -1406,7 +1404,7 @@ int eb_get_str(EditBuffer *b, char *buf, int buf_size)
 {
     int len;
 
-    len = b->total_size;
+    len = eb_total_size(b);
     if (len > buf_size - 1)
         len = buf_size - 1;
     eb_read(b, 0, buf, len);
@@ -1654,7 +1652,7 @@ int save_buffer(EditBuffer *b)
 void eb_invalidate_raw_data(EditBuffer *b)
 {
     b->save_log = 0;
-    eb_delete(b, 0, b->total_size);
+    eb_delete(b, 0, eb_total_size(b));
     eb_log_reset(b);
 }
 

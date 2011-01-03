@@ -57,7 +57,7 @@ static int unihex_display(EditState *s, DisplayState *ds, int offset)
 
     len = 0;
     for (j = 0; j < s->disp_width; j++) {
-        if (offset < s->b->total_size) {
+        if (offset < eb_total_size(s->b)) {
             b = eb_nextc(s->b, offset, &offset1);
             pos[len] = offset;
             buf[len] = b;

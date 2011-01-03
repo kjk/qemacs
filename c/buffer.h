@@ -31,6 +31,8 @@ typedef struct Pages {
     /* page cache */
     Page *cur_page;
     int cur_offset;
+
+    int total_size; /* sum of Page.size in page_table */
 } Pages;
 
 #define DIR_LTR 0
@@ -73,7 +75,6 @@ typedef struct EditBuffer {
     Pages pages;
 
     int mark;       /* current mark (moved with text) */
-    int total_size; /* total size of the buffer */
     int modified;
 
     /* if the file is kept open because it is mapped, its handle is there */
@@ -201,6 +202,10 @@ EditBufferDataType *eb_probe_data_type(const char *filename, int mode,
 void eb_set_data_type(EditBuffer *b, EditBufferDataType *bdt);
 void eb_invalidate_raw_data(EditBuffer *b);
 extern EditBufferDataType raw_data_type;
+
+static inline eb_total_size(EditBuffer *b) {
+    return b->pages.total_size;
+}
 
 #endif
 

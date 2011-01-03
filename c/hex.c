@@ -42,7 +42,7 @@ static int hex_display(EditState *s, DisplayState *ds, int offset)
 
     display_printf(ds, -1, -1, "%08x ", offset);
     eof = 0;
-    len = s->b->total_size - offset;
+    len = eb_total_size(s->b) - offset;
     if (len > s->disp_width)
         len = s->disp_width;
     if (s->mode == &hex_mode) {
@@ -92,7 +92,7 @@ static int hex_display(EditState *s, DisplayState *ds, int offset)
 
 void do_goto_byte(EditState *s, int offset)
 {
-    if (offset < 0 || offset >= s->b->total_size)
+    if (offset < 0 || offset >= eb_total_size(s->b))
         return;
     s->offset = offset;
 }
@@ -202,8 +202,8 @@ void hex_move_bol(EditState *s)
 void hex_move_eol(EditState *s)
 {
     s->offset = align(s->offset, s->disp_width) + s->disp_width - 1;
-    if (s->offset >= s->b->total_size)
-        s->offset = s->b->total_size;
+    if (s->offset >= eb_total_size(s->b))
+        s->offset = eb_total_size(s->b);
 }
 
 void hex_move_left_right(EditState *s, int dir, int move_mark)
@@ -211,8 +211,8 @@ void hex_move_left_right(EditState *s, int dir, int move_mark)
     s->offset += dir;
     if (s->offset < 0)
         s->offset = 0;
-    else if (s->offset > s->b->total_size)
-        s->offset = s->b->total_size;
+    else if (s->offset > eb_total_size(s->b))
+        s->offset = eb_total_size(s->b);
 }
 
 void hex_move_up_down(EditState *s, int dir, int move_mark)
@@ -220,8 +220,8 @@ void hex_move_up_down(EditState *s, int dir, int move_mark)
     s->offset += dir * s->disp_width;
     if (s->offset < 0)
         s->offset = 0;
-    else if (s->offset > s->b->total_size)
-        s->offset = s->b->total_size;
+    else if (s->offset > eb_total_size(s->b))
+        s->offset = eb_total_size(s->b);
 }
 
 void hex_write_char(EditState *s, int key)
@@ -276,7 +276,7 @@ void hex_write_char(EditState *s, int key)
         }
         if (++s->hex_nibble == hsize) {
             s->hex_nibble = 0;
-            if (s->offset < s->b->total_size)
+            if (s->offset < eb_total_size(s->b))
                 s->offset += len;
         }
     } else {
@@ -292,10 +292,10 @@ void hex_mode_line(EditState *s, char *buf, int buf_size)
     basic_mode_line(s, buf, buf_size, '-');
     q = buf + strlen(buf);
     q += sprintf(q, "0x%x--0x%x", 
-                 s->offset, s->b->total_size);
+                 s->offset, eb_total_size(s->b));
     percent = 0;
-    if (s->b->total_size > 0)
-        percent = (s->offset * 100) / s->b->total_size;
+    if (eb_total_size(s->b) > 0)
+        percent = (s->offset * 100) / eb_total_size(s->b);
     q += sprintf(q, "--%d%%", percent);
 }
 

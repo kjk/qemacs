@@ -177,16 +177,16 @@ static void do_dired_sort(EditState *s)
     /* construct list buffer */
     b = s->b;
     b->flags &= ~BF_READONLY;
-    eb_delete(b, 0, b->total_size);
+    eb_delete(b, 0, eb_total_size(b));
     s->offset = 0;
     if (DIRED_HEADER)
         eb_printf(b, "  %s:\n", hs->path);
     for (i = 0; i < hs->items.nb_items; i++) {
         item = hs->items.items[i];
         dip = item->opaque;
-        dip->offset = b->total_size;
+        dip->offset = eb_total_size(b);
         if (item == cur_item)
-            s->offset = b->total_size;
+            s->offset = eb_total_size(b);
         eb_printf(b, "%c %s\n", dip->mark, item->str);
     }
     b->modified = 0;
@@ -474,7 +474,7 @@ static void dired_display_hook(EditState *s)
     int index;
 
     /* Prevent point from going beyond list */
-    if (s->offset && s->offset == s->b->total_size)
+    if (s->offset && s->offset == eb_total_size(s->b))
         do_up_down(s, -1);
 
     /* open file so that user can see it before it is selected */

@@ -428,7 +428,7 @@ void do_bof(EditState *s)
 
 void do_eof(EditState *s)
 {
-    s->offset = s->b->total_size;
+    s->offset = eb_total_size(s->b);
 }
 
 void do_bol(EditState *s)
@@ -491,7 +491,7 @@ static void word_right(EditState *s, int w)
     int c, offset1;
 
     for (;;) {
-        if (s->offset >= s->b->total_size)
+        if (s->offset >= eb_total_size(s->b))
             break;
         c = eb_nextc(s->b, s->offset, &offset1);
         if (isword(c) == w)
@@ -535,7 +535,7 @@ int eb_next_paragraph(EditBuffer *b, int offset)
     /* find end of paragraph */
     text_found = 0;
     for (;;) {
-        if (offset >= b->total_size)
+        if (offset >= eb_total_size(b))
             break;
         if (eb_is_empty_line(b, offset)) {
             if (text_found)
@@ -717,7 +717,7 @@ void do_changecase_word(EditState *s, int up)
     
     word_right(s, 1);
     for (;;) {
-        if (s->offset >= s->b->total_size)
+        if (s->offset >= eb_total_size(s->b))
             break;
         c = eb_nextc(s->b, s->offset, NULL);
         if (!isword(c))
@@ -937,7 +937,7 @@ void text_move_up_down(EditState *s, int dir, int move_mark)
     /* if no cursor position is found, we go to bof or eof according
        to dir */
     if (dir > 0)
-        m->offsetd = s->b->total_size;
+        m->offsetd = eb_total_size(s->b);
     else
         m->offsetd = 0;
     display_init(ds, s, DISP_CURSOR);
@@ -1404,7 +1404,7 @@ void do_set_mark(EditState *s)
 void do_mark_whole_buffer(EditState *s)
 {
     s->b->mark = 0;
-    s->offset = s->b->total_size;
+    s->offset = eb_total_size(s->b);
 }
 
 EditBuffer *new_yank_buffer(void)
@@ -1482,7 +1482,7 @@ void do_yank(EditState *s)
     b = qs->yank_buffers[qs->yank_current];
     if (!b)
         return;
-    size = b->total_size;
+    size = eb_total_size(b);
     if (size > 0) {
         eb_insert_buffer(s->b, s->offset, b, 0, size);
         s->offset += size;
@@ -1616,7 +1616,7 @@ static void do_set_mode_file(EditState *s, ModeDef *m,
             }
         } else {
             /* if raw data and nothing loaded, we try to load */
-            if (b->total_size == 0 && !b->modified)
+            if (eb_total_size(b) == 0 && !b->modified)
                 reload_buffer(s, b, f1);
         }
         if (size > 0) {
@@ -1704,15 +1704,15 @@ void do_convert_buffer_file_coding_system(EditState *s,
 
     /* well, not very fast, but simple */
     b = s->b;
-    for (offset = 0; offset < b->total_size;) {
+    for (offset = 0; offset < eb_total_size(b);) {
         c = eb_nextc(b, offset, &offset);
         len = unicode_to_charset(buf, c, charset);
-        eb_write(b1, b1->total_size, buf, len);
+        eb_write(b1, eb_total_size(b1), buf, len);
     }
     
     /* replace current buffer with convertion */
-    eb_delete(b, 0, b->total_size);
-    eb_insert_buffer(b, 0, b1, 0, b1->total_size);
+    eb_delete(b, 0, eb_total_size(b));
+    eb_insert_buffer(b, 0, b1, 0, eb_total_size(b1));
 
     eb_free(b1);
     eb_set_charset(b, charset);
@@ -1762,7 +1762,7 @@ void do_count_lines(EditState *s)
 {
     int total_lines, line_num, mark_line, col_num;
 
-    eb_get_pos(s->b, &total_lines, &col_num, s->b->total_size);
+    eb_get_pos(s->b, &total_lines, &col_num, eb_total_size(s->b));
     eb_get_pos(s->b, &mark_line, &col_num, s->b->mark);
     eb_get_pos(s->b, &line_num, &col_num, s->offset);
     
@@ -1777,7 +1777,7 @@ void do_what_cursor_position(EditState *s)
     int c, pos, offset1;
 
     buf[0] = '\0';
-    if (s->offset < s->b->total_size) {
+    if (s->offset < eb_total_size(s->b)) {
         c = eb_nextc(s->b, s->offset, &offset1);
         pos = snprintf(buf, sizeof(buf), "char: ");
         if (c < 32 || c == 127) {
@@ -1796,7 +1796,7 @@ void do_what_cursor_position(EditState *s)
     }    
     eb_get_pos(s->b, &line_num, &col_num, s->offset);
     put_status(s, "%spoint=%d column=%d mark=%d size=%d region=%d",
-               buf, s->offset, col_num, s->b->mark, s->b->total_size,
+               buf, s->offset, col_num, s->b->mark, eb_total_size(s->b),
                abs(s->offset - s->b->mark));
 }
 
@@ -1887,8 +1887,8 @@ void text_mode_line(EditState *s, char *buf, int buf_size)
     q += sprintf(q, "--[%d,%d]-[%d]", s->x_disp[0], s->x_disp[1], s->y_disp);
 #endif
     percent = 0;
-    if (s->b->total_size > 0)
-        percent = (s->offset * 100) / s->b->total_size;
+    if (eb_total_size(s->b) > 0)
+        percent = (s->offset * 100) / eb_total_size(s->b);
     q += sprintf(q, "--%d%%", percent);
     *q = '\0';
 }
@@ -3007,7 +3007,7 @@ int text_display(EditState *s, DisplayState *ds, int offset)
     char_index = 0;
     for (;;) {
         offset0 = offset;
-        if (offset >= s->b->total_size) {
+        if (offset >= eb_total_size(s->b)) {
             display_eol(ds, offset0, offset0 + 1);
             offset = -1; /* signal end of text */
             break;
@@ -4404,7 +4404,7 @@ void do_completion(EditState *s)
             EditBuffer *b = completion_popup_window->b;
             /* modify the list with the current matches */
             qsort(outputs, count, sizeof(StringItem *), completion_sort_func);
-            eb_delete(b, 0, b->total_size);
+            eb_delete(b, 0, eb_total_size(b));
             for (i = 0; i < count; i++) {
                 eb_printf(b, " %s", outputs[i]->str);
                 if (i != count - 1)
@@ -4442,7 +4442,7 @@ void minibuf_complete_scroll_up_down(EditState *s, int dir)
 static void set_minibuffer_str(EditState *s, const char *str)
 {
     int len;
-    eb_delete(s->b, 0, s->b->total_size);
+    eb_delete(s->b, 0, eb_total_size(s->b));
     len = strlen(str);
     eb_write(s->b, 0, (u8 *)str, len);
     s->offset = len;
@@ -5261,7 +5261,7 @@ static void quit_confirm_cb(void *opaque, char *reply)
 int eb_search(EditBuffer *b, int offset, int dir, u8 *buf, int size, 
               int flags, CSSAbortFunc *abort_func, void *abort_opaque)
 {
-    int total_size = b->total_size;
+    int total_size = eb_total_size(b);
     int i, c, lower_count, upper_count;
     unsigned char ch;
     u8 buf1[1024];
@@ -6061,7 +6061,7 @@ EditBuffer *new_help_buffer(int *show_ptr)
     *show_ptr = 0;
     b = eb_find("*Help*");
     if (b) {
-        eb_delete(b, 0, b->total_size);
+        eb_delete(b, 0, eb_total_size(b));
     } else {
         b = eb_new("*Help*", BF_SYSTEM);
         *show_ptr = 1;

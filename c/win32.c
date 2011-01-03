@@ -955,12 +955,12 @@ static void win32_selection_activate(QEditScreen *s)
     /* TODO: assumes the buffer is ascii which is not necessary true. Should be
        much smarter and convert the content of yank_buf to Unicode, based on
        the encoding in yank_buf */
-    h = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, yank_buf->total_size+1);
+    h = GlobalAlloc(GMEM_MOVEABLE | GMEM_ZEROINIT, eb_total_size(yank_buf)+1);
     if (!h)
         goto exit;
 
     data = (char*)GlobalLock(h);
-    eb_read(yank_buf, 0, (void*)data, yank_buf->total_size);
+    eb_read(yank_buf, 0, (void*)data, eb_total_size(yank_buf));
     GlobalUnlock(h);
     SetClipboardData(CF_TEXT, h);
 

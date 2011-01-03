@@ -176,7 +176,7 @@ static void html_display(EditState *s)
         /* find error message buffer */
         b = eb_find(HTML_ERROR_BUFFER);
         if (b) {
-            eb_delete(b, 0, b->total_size);
+            eb_delete(b, 0, eb_total_size(b));
         }
 
         hs->css_ctx = css_new_document(s->screen, s->b);
@@ -193,7 +193,7 @@ static void html_display(EditState *s)
         hs->css_ctx->default_bgcolor = qe_styles[QE_STYLE_CSS_DEFAULT].bg_color;
 
         timer_start();
-        hs->top_box = xml_parse_buffer(s->b, 0, s->b->total_size, 
+        hs->top_box = xml_parse_buffer(s->b, 0, eb_total_size(s->b), 
                                        hs->css_ctx->style_sheet, 
                                        hs->parse_flags,
                                        html_test_abort, NULL);
