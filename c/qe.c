@@ -523,6 +523,7 @@ void text_move_word_left_right(EditState *s, int dir)
         word_left(s, 1);
         word_left(s, 0);
     }
+    s->b->mark = s->offset;
 }
 
 /* paragraph handling */
