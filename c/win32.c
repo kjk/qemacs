@@ -57,6 +57,7 @@ typedef struct WinWindow {
     int     bmp_dx;
     int     bmp_dy;
     HFONT   font;
+    HMENU   hmenu;
 } WinWindow;
 
 typedef struct QEEventQ {
@@ -302,17 +303,22 @@ static void show_double_buffer(void)
 #define IDM_FILE_OPEN               401
 #define IDM_FILE_CLOSE              402
 #define IDM_FILE_EXIT               403
+#define IDM_VIEW_TOGGLE_LINES       404
 
 typedef struct MenuDef {
     const char *    title;
     int             id;
 } MenuDef;
 
-MenuDef menuDefFile[] = {
+MenuDef menu_file[] = {
     { "&New",               IDM_FILE_NEW },
     { "&Open\tCtrl-O",      IDM_FILE_OPEN },
     { "&Close\tCtrl-W",     IDM_FILE_CLOSE },
     { "E&xit\tCtrl-Q",      IDM_FILE_EXIT }
+};
+
+MenuDef menu_view[] = {
+    { "Show new lines",     IDM_VIEW_TOGGLE_LINES }
 };
 
 static int str_eq(const char *s1, const char *s2)
@@ -345,9 +351,17 @@ static HMENU menu_from_def(MenuDef menuDefs[], int menuItems)
 static HMENU create_menu()
 {
     HMENU menu = CreateMenu();
-    HMENU tmp = menu_from_def(menuDefFile, dimof(menuDefFile));
+    HMENU tmp = menu_from_def(menu_file, dimof(menu_file));
     AppendMenu(menu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, "&File");
+    tmp = menu_from_def(menu_view, dimof(menu_view));
+    AppendMenu(menu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, "&View");
     return menu;
+}
+
+static void set_menu_show_lines_states(HMENU menu, int show)
+{
+    UINT check = show ? MF_BYCOMMAND | MF_CHECKED : MF_BYCOMMAND | MF_UNCHECKED;
+    CheckMenuItem(menu, IDM_VIEW_TOGGLE_LINES, check);
 }
 
 static int win_init(QEditScreen *s, int w, int h)
@@ -358,7 +372,6 @@ static int win_init(QEditScreen *s, int w, int h)
     HWND        desktop_hwnd;
     int         font_size_win;
     HFONT       font_prev;
-    HMENU       hmenu;
     
     if (!g_hprevinst) 
         init_application();
@@ -406,8 +419,8 @@ static int win_init(QEditScreen *s, int w, int h)
                              0, 0, xsize, ysize, NULL, NULL, _hInstance, NULL);
     win_ctx.hdc_orig = GetDC(win_ctx.hwnd);
     /* SetBkColor(win_ctx.hdc_orig, RGB(255,0,0)); */
-    hmenu = create_menu();
-    SetMenu(win_ctx.hwnd, hmenu);
+    win_ctx.hmenu = create_menu();
+    SetMenu(win_ctx.hwnd, win_ctx.hmenu);
     SelectObject(win_ctx.hdc_orig, win_ctx.font);
 
     /*    SetWindowPos (win_ctx.hwnd, NULL, 0, 0, xsize, ysize, SWP_NOMOVE); */
@@ -544,6 +557,8 @@ static void on_drop_files(HDROP hDrop)
     if (files_count > 0)
         queue_expose();
 }
+
+extern void do_toggle_line_numbers(EditState *s);
 
 static int ignore_wchar_msg = 0;
 
@@ -811,6 +826,12 @@ LRESULT CALLBACK qe_wnd_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
             case IDM_FILE_EXIT:
                 SendMessage(hwnd, WM_CLOSE, 0, 0);                
                 break;
+            case IDM_VIEW_TOGGLE_LINES:
+                do_toggle_line_numbers(qe_state.active_window);
+                win_invalidate(win_ctx.hwnd);
+                set_menu_show_lines_states(win_ctx.hmenu, qe_state.active_window->line_numbers);
+                break;
+
             default:
                 return DefWindowProc(hwnd, msg, wParam, lParam);
         }
