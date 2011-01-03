@@ -25,6 +25,14 @@ typedef struct Page {
     int nb_chars;
 } Page;
 
+typedef struct Pages {
+    Page *page_table;
+    int nb_pages;
+    /* page cache */
+    Page *cur_page;
+    int cur_offset;
+} Pages;
+
 #define DIR_LTR 0
 #define DIR_RTL 1
 
@@ -62,15 +70,12 @@ typedef struct EditBufferCallbackList {
 #define BF_DIRED     0x0100  /* buffer is interactive dired */
 
 typedef struct EditBuffer {
-    Page *page_table;
-    int nb_pages;
+    Pages pages;
+
     int mark;       /* current mark (moved with text) */
     int total_size; /* total size of the buffer */
     int modified;
 
-    /* page cache */
-    Page *cur_page;
-    int cur_offset;
     /* if the file is kept open because it is mapped, its handle is there */
 #ifdef WIN32
     HANDLE file_handle;

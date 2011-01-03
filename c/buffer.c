@@ -33,28 +33,34 @@ EditBufferDataType *first_buffer_data_type = NULL;
 /* basic access to the edit buffer */
 
 /* find a page at a given offset */
-static Page *find_page(EditBuffer *b, int *offset_ptr)
+static Page *pages_find_page(Pages *pages, int *offset_ptr)
 {
     Page *p;
     int offset;
 
     offset = *offset_ptr;
-    if (b->cur_page && offset >= b->cur_offset && 
-        offset < b->cur_offset + b->cur_page->size) {
+    if (pages->cur_page && offset >= pages->cur_offset && 
+        offset < pages->cur_offset + pages->cur_page->size) {
         /* use the cache */
-        *offset_ptr -= b->cur_offset;
-        return b->cur_page;
+        *offset_ptr -= pages->cur_offset;
+        return pages->cur_page;
     } else {
-        p = b->page_table;
+        p = pages->page_table;
         while (offset >= p->size) {
             offset -= p->size;
             p++;
         }
-        b->cur_page = p;
-        b->cur_offset = *offset_ptr - offset;
+        pages->cur_page = p;
+        pages->cur_offset = *offset_ptr - offset;
         *offset_ptr = offset;
         return p;
     }
+}
+
+static Page *find_page(EditBuffer *b, int *offset_ptr)
+{
+    Pages *pages = &b->pages;
+    return pages_find_page(pages, offset_ptr);
 }
 
 /* prepare a page to be written */
@@ -136,13 +142,13 @@ void eb_write(EditBuffer *b, int offset, void *buf_arg, int size)
 
 /* internal function for insertion : 'buf' of size 'size' at the
    beginning of the page at page_index */
-static void eb_insert1(EditBuffer *b, int page_index, const u8 *buf, int size)
+static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
 {
     int len, n;
     Page *p;
 
-    if (page_index < b->nb_pages) {
-        p = b->page_table + page_index;
+    if (page_index < pages->nb_pages) {
+        p = pages->page_table + page_index;
         len = MAX_PAGE_SIZE - p->size;
         if (len > size)
             len = size;
@@ -159,10 +165,10 @@ static void eb_insert1(EditBuffer *b, int page_index, const u8 *buf, int size)
     /* now add new pages if necessary */
     n = (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
     if (n > 0) {
-        b->nb_pages += n;
-        b->page_table = realloc(b->page_table, b->nb_pages * sizeof(Page));
-        p = b->page_table + page_index;
-        memmove(p + n, p, sizeof(Page) * (b->nb_pages - n - page_index));
+        pages->nb_pages += n;
+        pages->page_table = realloc(pages->page_table, pages->nb_pages * sizeof(Page));
+        p = pages->page_table + page_index;
+        memmove(p + n, p, sizeof(Page) * (pages->nb_pages - n - page_index));
         while (size > 0) {
             len = size;
             if (len > MAX_PAGE_SIZE)
@@ -178,20 +184,27 @@ static void eb_insert1(EditBuffer *b, int page_index, const u8 *buf, int size)
     }
 }
 
+static void eb_insert1(EditBuffer *b, int page_index, const u8 *buf, int size)
+{
+    Pages *pages = &b->pages;
+    pages_insert(pages, page_index, buf, size);
+}
+
 /* We must have : 0 <= offset <= b->total_size */
 static void eb_insert_lowlevel(EditBuffer *b, int offset,
                                const u8 *buf, int size)
 {
     int len, len_out, page_index;
     Page *p;
+    Pages *pages = &b->pages;
 
     b->total_size += size;
 
     /* find the correct page */
-    p = b->page_table;
+    p = pages->page_table;
     if (offset > 0) {
         offset--;
-        p = find_page(b, &offset);
+        p = pages_find_page(pages, &offset);
         offset++;
 
         /* compute what we can insert in current page */
@@ -200,20 +213,19 @@ static void eb_insert_lowlevel(EditBuffer *b, int offset,
             len = size;
         /* number of bytes to put in next pages */
         len_out = p->size + len - MAX_PAGE_SIZE;
-        page_index = p - b->page_table;
+        page_index = p - pages->page_table;
         if (len_out > 0)
-            eb_insert1(b, page_index + 1, 
+            pages_insert(pages, page_index + 1, 
                        p->data + p->size - len_out, len_out);
         else
             len_out = 0;
         /* now we can insert in current page */
         if (len > 0) {
-            p = b->page_table + page_index;
+            p = pages->page_table + page_index;
             update_page(p);
             p->size += len - len_out;
             p->data = realloc(p->data, p->size);
-            memmove(p->data + offset + len, 
-                    p->data + offset, p->size - (offset + len));
+            memmove(p->data + offset + len, p->data + offset, p->size - (offset + len));
             memcpy(p->data + offset, buf, len);
             buf += len;
             size -= len;
@@ -223,10 +235,10 @@ static void eb_insert_lowlevel(EditBuffer *b, int offset,
     }
     /* insert the remaining data in the next pages */
     if (size > 0)
-        eb_insert1(b, page_index + 1, buf, size);
+        pages_insert(pages, page_index + 1, buf, size);
 
     /* the page cache is no longer valid */
-    b->cur_page = NULL;
+    pages->cur_page = NULL;
 }
 
 /* Insert 'size bytes of 'src' buffer from position 'src_offset' into
@@ -238,15 +250,19 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
 {
     Page *p, *p_start, *q;
     int size_start, len, n, page_index;
+    Pages *dest_pages, *src_pages;
 
     if (size == 0)
         return;
+
+    dest_pages = &dest->pages;
+    src_pages = &src->pages;
 
     eb_addlog(dest, LOGOP_INSERT, dest_offset, size);
 
     /* insert the data from the first page if it is not completely
        selected */
-    p = find_page(src, &src_offset);
+    p = pages_find_page(src_pages, &src_offset);
     if (src_offset > 0) {
         len = p->size - src_offset;
         if (len > size)
@@ -262,21 +278,21 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
 
     /* cut the page at dest offset if needed */
     if (dest_offset < dest->total_size) {
-        q = find_page(dest, &dest_offset);
-        page_index = q - dest->page_table;
+        q = pages_find_page(dest_pages, &dest_offset);
+        page_index = q - dest_pages->page_table;
         if (dest_offset > 0) {
             page_index++;
-            eb_insert1(dest, page_index, q->data + dest_offset, 
+            pages_insert(dest_pages, page_index, q->data + dest_offset, 
                        q->size - dest_offset);
             /* must reload q because page_table may have been
                realloced */
-            q = dest->page_table + page_index - 1;
+            q = dest_pages->page_table + page_index - 1;
             update_page(q);
             q->data = realloc(q->data, dest_offset);
             q->size = dest_offset;
         }
     } else {
-        page_index = dest->nb_pages;
+        page_index = dest_pages->nb_pages;
     }
 
     /* update total_size */
@@ -293,12 +309,12 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
     p = p_start;
     if (n > 0) {
         /* add the pages */
-        dest->nb_pages += n;
-        dest->page_table = realloc(dest->page_table,
-                                   dest->nb_pages * sizeof(Page));
-        q = dest->page_table + page_index;
+        dest_pages->nb_pages += n;
+        dest_pages->page_table = realloc(dest_pages->page_table,
+                                   dest_pages->nb_pages * sizeof(Page));
+        q = dest_pages->page_table + page_index;
         memmove(q + n, q, 
-                sizeof(Page) * (dest->nb_pages - n - page_index));
+                sizeof(Page) * (dest_pages->nb_pages - n - page_index));
         p = p_start;
         while (n > 0) {
             len = p->size;
@@ -317,16 +333,16 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
             p++;
             q++;
         }
-        page_index = q - dest->page_table;
+        page_index = q - dest_pages->page_table;
     }
     
     /* insert the remaning bytes */
     if (size > 0) {
-        eb_insert1(dest, page_index, p->data, size);
+        pages_insert(dest_pages, page_index, p->data, size);
     }
 
     /* the page cache is no longer valid */
-    dest->cur_page = NULL;
+    dest_pages->cur_page = NULL;
 }
 
 /* Insert 'size' bytes from 'buf' into 'b' at offset 'offset'. We must
@@ -336,9 +352,6 @@ void eb_insert(EditBuffer *b, int offset, const void *buf, int size)
     eb_addlog(b, LOGOP_INSERT, offset, size);
 
     eb_insert_lowlevel(b, offset, buf, size);
-
-    /* the page cache is no longer valid */
-    b->cur_page = NULL;
 }
 
 /* Append 'size' bytes from 'buf' at the end of 'b' */
@@ -352,15 +365,16 @@ void eb_delete(EditBuffer *b, int offset, int size)
 {
     int n, len;
     Page *del_start, *p;
+    Pages *pages;
 
     if (offset >= b->total_size)
         return;
 
     b->total_size -= size;
     eb_addlog(b, LOGOP_DELETE, offset, size);
+    pages = &b->pages;
 
-    /* find the correct page */
-    p = find_page(b, &offset);
+    p = pages_find_page(pages, &offset);
     n = 0;
     del_start = NULL;
     while (size > 0) {
@@ -393,14 +407,14 @@ void eb_delete(EditBuffer *b, int offset, int size)
 
     /* now delete the requested pages */
     if (n > 0) {
-        b->nb_pages -= n;
+        pages->nb_pages -= n;
         memmove(del_start, del_start + n, 
-                (b->page_table + b->nb_pages - del_start) * sizeof(Page));
-        b->page_table = realloc(b->page_table, b->nb_pages * sizeof(Page));
+                (pages->page_table + pages->nb_pages - del_start) * sizeof(Page));
+        pages->page_table = realloc(pages->page_table, pages->nb_pages * sizeof(Page));
     }
 
     /* the page cache is no longer valid */
-    b->cur_page = NULL;
+    pages->cur_page = NULL;
 }
 
 /* flush the log */
@@ -881,12 +895,14 @@ int eb_goto_pos(EditBuffer *b, int line1, int col1)
     Page *p, *p_end;
     int line2, col2, line, col, offset, offset1;
     u8 *q, *q_end;
+    Pages *pages;
 
     line = 0;
     col = 0;
     offset = 0;
-    p = b->page_table;
-    p_end = b->page_table + b->nb_pages;
+    pages = &b->pages;
+    p = pages->page_table;
+    p_end = pages->page_table + pages->nb_pages;
     while (p < p_end) {
         if (!(p->flags & PG_VALID_POS)) {
             p->flags |= PG_VALID_POS;
@@ -928,13 +944,15 @@ int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
 {
     Page *p, *p_end;
     int line, col, line1, col1;
+    Pages *pages;
 
     QASSERT(offset >= 0);
 
     line = 0;
     col = 0;
-    p = b->page_table;
-    p_end = p + b->nb_pages;
+    pages = &b->pages;
+    p = pages->page_table;
+    p_end = p + pages->nb_pages;
     for (;;) {
         if (p >= p_end)
             goto the_end;
@@ -1013,6 +1031,7 @@ int eb_goto_char(EditBuffer *b, int pos)
 {
     int offset;
     Page *p, *p_end;
+    Pages *pages;
 
     if (b->charset != &charset_utf8) {
         offset = pos;
@@ -1020,8 +1039,9 @@ int eb_goto_char(EditBuffer *b, int pos)
             offset = b->total_size;
     } else {
         offset = 0;
-        p = b->page_table;
-        p_end = b->page_table + b->nb_pages;
+        pages = &b->pages;
+        p = pages->page_table;
+        p_end = pages->page_table + pages->nb_pages;
         while (p < p_end) {
             if (!(p->flags & PG_VALID_CHAR)) {
                 p->flags |= PG_VALID_CHAR;
@@ -1046,6 +1066,7 @@ int eb_get_char_offset(EditBuffer *b, int offset)
 {
     int pos;
     Page *p, *p_end;
+    Pages *pages;
 
     /* if no decoding function in charset, it means it is 8 bit only */
     if (b->charset_state.decode_func == NULL) {
@@ -1053,8 +1074,9 @@ int eb_get_char_offset(EditBuffer *b, int offset)
         if (pos > b->total_size)
             pos = b->total_size;
     } else {
-        p = b->page_table;
-        p_end = p + b->nb_pages;
+        pages = &b->pages;
+        p = pages->page_table;
+        p_end = p + pages->nb_pages;
         pos = 0;
         for (;;) {
             if (p >= p_end)
@@ -1274,9 +1296,9 @@ int mmap_buffer(EditBuffer *b, const char *filename)
 #endif
         return -1;
     }
-    b->page_table = p;
+    b->pages.page_table = p;
     b->total_size = file_size;
-    b->nb_pages = n;
+    b->pages.nb_pages = n;
     size = file_size;
     ptr = file_ptr;
     while (size > 0) {
