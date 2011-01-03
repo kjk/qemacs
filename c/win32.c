@@ -1037,7 +1037,9 @@ static QEDisplay win32_dpy = {
     win_probe,
     win_init,
     win_close,
-    win_cursor_at,
+    // TODO: disabled win_cursor_at because it disappears
+    // when quickly moving the cursor
+    NULL, // win_cursor_at,
     win_flush,
     win_is_user_input_pending,
     win_fill_rectangle,
