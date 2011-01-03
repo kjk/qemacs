@@ -162,8 +162,7 @@ static void eb_insert1(EditBuffer *b, int page_index, const u8 *buf, int size)
         b->nb_pages += n;
         b->page_table = realloc(b->page_table, b->nb_pages * sizeof(Page));
         p = b->page_table + page_index;
-        memmove(p + n, p,
-                sizeof(Page) * (b->nb_pages - n - page_index));
+        memmove(p + n, p, sizeof(Page) * (b->nb_pages - n - page_index));
         while (size > 0) {
             len = size;
             if (len > MAX_PAGE_SIZE)

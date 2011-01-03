@@ -296,6 +296,60 @@ static void show_double_buffer(void)
     BitBlt(win_ctx.hdc_orig, 0, 0, win_ctx.bmp_dx, win_ctx.bmp_dy, win_ctx.hdc, 0, 0, SRCCOPY);
 }
 
+#define SEP_ITEM "-----"
+
+#define IDM_FILE_NEW                400
+#define IDM_FILE_OPEN               401
+#define IDM_FILE_CLOSE              402
+#define IDM_FILE_EXIT               403
+
+typedef struct MenuDef {
+    const char *    title;
+    int             id;
+} MenuDef;
+
+MenuDef menuDefFile[] = {
+    { "&New",               IDM_FILE_NEW },
+    { "&Open\tCtrl-O",      IDM_FILE_OPEN },
+    { "&Close\tCtrl-W",     IDM_FILE_CLOSE },
+    { "E&xit\tCtrl-Q",      IDM_FILE_EXIT }
+};
+
+static int str_eq(const char *s1, const char *s2)
+{
+    return 0 == strcmp(s1, s2);
+}
+
+static HMENU menu_from_def(MenuDef menuDefs[], int menuItems)
+{
+    int i;
+    HMENU m = CreateMenu();
+    if (NULL == m) 
+        return NULL;
+
+    for (i=0; i < menuItems; i++) {
+        MenuDef md = menuDefs[i];
+        const char *title = md.title;
+        if (!title)
+            continue; // the menu item was dynamically removed
+        if (str_eq(title, SEP_ITEM)) {
+            AppendMenu(m, MF_SEPARATOR, 0, NULL);
+            continue;
+        }
+        // TODO: utf8 -> WCHAR if necessary
+        AppendMenu(m, MF_STRING, (UINT_PTR)md.id, title);
+    }
+    return m;
+}
+
+static HMENU create_menu()
+{
+    HMENU menu = CreateMenu();
+    HMENU tmp = menu_from_def(menuDefFile, dimof(menuDefFile));
+    AppendMenu(menu, MF_POPUP | MF_STRING, (UINT_PTR)tmp, "&File");
+    return menu;
+}
+
 static int win_init(QEditScreen *s, int w, int h)
 {
     int         xsize, ysize, font_ysize;
@@ -304,6 +358,7 @@ static int win_init(QEditScreen *s, int w, int h)
     HWND        desktop_hwnd;
     int         font_size_win;
     HFONT       font_prev;
+    HMENU       hmenu;
     
     if (!g_hprevinst) 
         init_application();
@@ -350,8 +405,9 @@ static int win_init(QEditScreen *s, int w, int h)
     win_ctx.hwnd = CreateWindow("qemacs", "qemacs", WS_OVERLAPPEDWINDOW, 
                              0, 0, xsize, ysize, NULL, NULL, _hInstance, NULL);
     win_ctx.hdc_orig = GetDC(win_ctx.hwnd);
-   /* SetBkColor(win_ctx.hdc_orig, RGB(255,0,0)); */
-
+    /* SetBkColor(win_ctx.hdc_orig, RGB(255,0,0)); */
+    hmenu = create_menu();
+    SetMenu(win_ctx.hwnd, hmenu);
     SelectObject(win_ctx.hdc_orig, win_ctx.font);
 
     /*    SetWindowPos (win_ctx.hwnd, NULL, 0, 0, xsize, ysize, SWP_NOMOVE); */
@@ -498,6 +554,7 @@ LRESULT CALLBACK qe_wnd_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     UINT            linesPerScroll;
     static int      wheelDelta = 0;   // Wheel delta from scroll
     int             linesToScroll;
+    int             cmdid;
 
     switch (msg) {
     case WM_CREATE:
@@ -738,6 +795,26 @@ LRESULT CALLBACK qe_wnd_proc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         on_drop_files((HDROP)wParam);
         break;
 
+    case WM_COMMAND:
+        cmdid = LOWORD(wParam);
+        switch (cmdid)
+        {
+            case IDM_FILE_NEW:
+                //on_file_new();
+                break;
+            case IDM_FILE_OPEN:
+                //on_file_open();
+                break;
+            case IDM_FILE_CLOSE:
+                // on_file_close();
+                break;
+            case IDM_FILE_EXIT:
+                SendMessage(hwnd, WM_CLOSE, 0, 0);                
+                break;
+            default:
+                return DefWindowProc(hwnd, msg, wParam, lParam);
+        }
+        break;
     default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
     }

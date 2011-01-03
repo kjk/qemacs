@@ -45,6 +45,8 @@ typedef unsigned char u8;
 
 #include "cutils.h"
 
+#define dimof(X)    (sizeof(X)/sizeof((X)[0]))
+
 /* low level I/O events */
 void set_read_handler(int fd, void (*cb)(void *opaque), void *opaque);
 void set_write_handler(int fd, void (*cb)(void *opaque), void *opaque);
