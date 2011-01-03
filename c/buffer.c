@@ -51,6 +51,45 @@ static int get_chars(u8 *buf, int size, QECharset *charset)
     return nb_chars;
 }
 
+/* return the number of lines and column position for a buffer */
+static void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr, 
+                    CharsetDecodeState *s)
+{
+    u8 *p, *p1, *lp;
+    int line, len, col, ch;
+
+    QASSERT(size >= 0);
+
+    line = 0;
+    p = buf;
+    lp = p;
+    p1 = p + size;
+    for (;;) {
+        p = memchr(p, '\n', p1 - p);
+        if (!p)
+            break;
+        p++;
+        lp = p;
+        line++;
+    }
+    /* now compute number of chars (XXX: potential problem if out of
+       block, but for UTF8 it works) */
+    col = 0;
+    while (lp < p1) {
+        ch = s->table[*lp];
+        if (ch == ESCAPE_CHAR) {
+            /* XXX: utf8 only is handled */
+            len = utf8_length[*lp];
+            lp += len;
+        } else {
+            lp++;
+        }
+        col++;
+    }
+    *line_ptr = line;
+    *col_ptr = col;
+}
+
 static int goto_char(u8 *buf, int pos, QECharset *charset)
 {
     int nb_chars, c;
@@ -377,6 +416,14 @@ void page_calc_chars(Page *p, QECharset *charset)
     if (!(p->flags & PG_VALID_CHAR)) {
         p->flags |= PG_VALID_CHAR;
         p->nb_chars = get_chars(p->data, p->size, charset);
+    }
+}
+
+void page_calc_pos(Page *p, CharsetDecodeState *charset_state)
+{
+    if (!(p->flags & PG_VALID_POS)) {
+        p->flags |= PG_VALID_POS;
+        get_pos(p->data, p->size, &p->nb_lines, &p->col, charset_state);
     }
 }
 
@@ -892,45 +939,6 @@ int eb_prevc(EditBuffer *b, int offset, int *prev_offset)
     return ch;
 }
 
-/* return the number of lines and column position for a buffer */
-static void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr, 
-                    CharsetDecodeState *s)
-{
-    u8 *p, *p1, *lp;
-    int line, len, col, ch;
-
-    QASSERT(size >= 0);
-
-    line = 0;
-    p = buf;
-    lp = p;
-    p1 = p + size;
-    for (;;) {
-        p = memchr(p, '\n', p1 - p);
-        if (!p)
-            break;
-        p++;
-        lp = p;
-        line++;
-    }
-    /* now compute number of chars (XXX: potential problem if out of
-       block, but for UTF8 it works) */
-    col = 0;
-    while (lp < p1) {
-        ch = s->table[*lp];
-        if (ch == ESCAPE_CHAR) {
-            /* XXX: utf8 only is handled */
-            len = utf8_length[*lp];
-            lp += len;
-        } else {
-            lp++;
-        }
-        col++;
-    }
-    *line_ptr = line;
-    *col_ptr = col;
-}
-
 int eb_goto_pos(EditBuffer *b, int line1, int col1)
 {
     Page *p, *p_end;
@@ -945,11 +953,7 @@ int eb_goto_pos(EditBuffer *b, int line1, int col1)
     p = pages->page_table;
     p_end = pages->page_table + pages->nb_pages;
     while (p < p_end) {
-        if (!(p->flags & PG_VALID_POS)) {
-            p->flags |= PG_VALID_POS;
-            get_pos(p->data, p->size, &p->nb_lines, &p->col, 
-                    &b->charset_state);
-        }
+        page_calc_pos(p, &b->charset_state);
         line2 = line + p->nb_lines;
         if (p->nb_lines)
             col2 = 0;
@@ -999,11 +1003,7 @@ int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
             goto the_end;
         if (offset < p->size)
             break;
-        if (!(p->flags & PG_VALID_POS)) {
-            p->flags |= PG_VALID_POS;
-            get_pos(p->data, p->size, &p->nb_lines, &p->col, 
-                    &b->charset_state);
-        }
+        page_calc_pos(p, &b->charset_state);
         line += p->nb_lines;
         if (p->nb_lines)
             col = 0;
