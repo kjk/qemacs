@@ -33,7 +33,7 @@ typedef struct QEFont {
     int refcount;
     int ascent;
     int descent;
-    void *private;
+    void *private_data;
     int system_font; /* TRUE if system font */
     /* cache data */
     int style;
@@ -129,7 +129,7 @@ struct QEditScreen {
     /* clip region handling */
     int clip_x1, clip_y1;
     int clip_x2, clip_y2;
-    void *private;
+    void *private_data;
 };
 
 static inline void draw_text(QEditScreen *s, QEFont *font,

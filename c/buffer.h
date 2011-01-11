@@ -9,14 +9,14 @@
 
 #define NB_LOGS_MAX 50
 
-#define PG_READ_ONLY    0x0001 /* the page is read only */
-#define PG_VALID_POS    0x0002 /* set if the nb_lines / col fields are up to date */
-#define PG_VALID_CHAR   0x0004 /* nb_chars is valid */
-#define PG_VALID_COLORS 0x0008 /* color state is valid */
-
 typedef struct Page {
     int size; /* data size */ 
     u8 *data;
+    unsigned read_only:1;    /* the page is read only */
+    unsigned valid_pos:1;    /* set if the nb_lines / col fields are up to date */
+    unsigned valid_char:1;   /* nb_chars is valid */
+    unsigned valid_colors:1; /* color state is valid */
+
     int flags;
     /* the following are needed to handle line / column computation */
     int nb_lines; /* Number of '\n' in data */
@@ -203,7 +203,7 @@ void eb_set_data_type(EditBuffer *b, EditBufferDataType *bdt);
 void eb_invalidate_raw_data(EditBuffer *b);
 extern EditBufferDataType raw_data_type;
 
-static inline eb_total_size(EditBuffer *b) {
+static inline int eb_total_size(EditBuffer *b) {
     return b->pages.total_size;
 }
 

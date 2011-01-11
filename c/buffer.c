@@ -150,16 +150,18 @@ static void update_page(Page *p)
     u8 *buf;
 
     /* if the page is read only, copy it */
-    if (p->flags & PG_READ_ONLY) {
-        buf = malloc(p->size);
+    if (p->read_only) {
+        buf = (u8*)malloc(p->size);
         /* XXX: should return an error */
         if (!buf)
             return;
         memcpy(buf, p->data, p->size);
         p->data = buf;
-        p->flags &= ~PG_READ_ONLY;
+        p->read_only = 0;
     }
-    p->flags &= ~(PG_VALID_POS | PG_VALID_CHAR | PG_VALID_COLORS);
+    p->valid_pos = 0;
+    p->valid_char = 0;
+    p->valid_colors = 0;
 }
 
 static void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
@@ -204,7 +206,7 @@ void pages_delete(Pages *pages, int offset, int size)
             if (!del_start)
                 del_start = p;
             /* we cannot free if read only */
-            if (!(p->flags & PG_READ_ONLY))
+            if (!p->read_only)
                 free(p->data);
             p++;
             offset = 0;
@@ -214,7 +216,7 @@ void pages_delete(Pages *pages, int offset, int size)
             memmove(p->data + offset, p->data + offset + len, 
                     p->size - offset - len);
             p->size -= len;
-            p->data = realloc(p->data, p->size);
+            p->data = (u8*)realloc(p->data, p->size);
             offset += len;
             if (offset >= p->size) {
                 p++;
@@ -385,14 +387,17 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
         while (n > 0) {
             len = p->size;
             q->size = len;
-            if (p->flags & PG_READ_ONLY) {
+            if (p->read_only) {
                 /* simply copy the reference */
-                q->flags = PG_READ_ONLY;
+                q->read_only = 1;
+                q->valid_char = 0;
+                q->valid_colors = 0;
+                q->valid_pos = 0;
                 q->data = p->data;
             } else {
                 /* allocate a new page */
                 q->flags = 0;
-                q->data = malloc(len);
+                q->data = (u8*)malloc(len);
                 memcpy(q->data, p->data, len);
             }
             n--;
@@ -413,16 +418,16 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
 
 void page_calc_chars(Page *p, QECharset *charset)
 {
-    if (!(p->flags & PG_VALID_CHAR)) {
-        p->flags |= PG_VALID_CHAR;
+    if (!p->valid_char) {
+        p->valid_char = 1;
         p->nb_chars = get_chars(p->data, p->size, charset);
     }
 }
 
 void page_calc_pos(Page *p, CharsetDecodeState *charset_state)
 {
-    if (!(p->flags & PG_VALID_POS)) {
-        p->flags |= PG_VALID_POS;
+    if (!p->valid_pos) {
+        p->valid_pos = 1;
         get_pos(p->data, p->size, &p->nb_lines, &p->col, charset_state);
     }
 }
@@ -1298,7 +1303,10 @@ int mmap_buffer(EditBuffer *b, const char *filename)
             len = MAX_PAGE_SIZE;
         p->data = ptr;
         p->size = len;
-        p->flags = PG_READ_ONLY;
+        p->read_only = 1;
+        p->valid_char = 0;
+        p->valid_colors = 0;
+        p->valid_pos = 0;
         ptr += len;
         size -= len;
         p++;

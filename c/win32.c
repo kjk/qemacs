@@ -378,7 +378,7 @@ static int win_init(QEditScreen *s, int w, int h)
 
     memcpy(&s->dpy, &win32_dpy, sizeof(QEDisplay));
 
-    s->private = NULL;
+    s->private_data = NULL;
     s->media = CSS_MEDIA_SCREEN;
 
     /* get font metric for window size */
@@ -868,14 +868,14 @@ static QEFont *win_open_font(QEditScreen *s, int style, int size)
     QEFont *    font;
     TEXTMETRIC  tm;
 
-    font = malloc(sizeof(QEFont));
+    font = (QEFont*)malloc(sizeof(QEFont));
     if (!font)
         return NULL;
     GetTextMetrics(win_ctx.hdc, &tm);
     font->refcount = 0;
     font->ascent = tm.tmAscent;
     font->descent = tm.tmDescent;
-    font->private = NULL;
+    font->private_data = NULL;
     return font;
 }
 
