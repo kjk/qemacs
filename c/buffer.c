@@ -144,6 +144,13 @@ static Page *pages_find_page(Pages *pages, int *offset_ptr)
     return p;
 }
 
+static void invalidate_attrs(Page *p)
+{
+    p->valid_pos = 0;
+    p->valid_char = 0;
+    p->valid_colors = 0;
+}
+
 /* prepare a page to be written */
 static void update_page(Page *p)
 {
@@ -159,9 +166,7 @@ static void update_page(Page *p)
         p->data = buf;
         p->read_only = 0;
     }
-    p->valid_pos = 0;
-    p->valid_char = 0;
-    p->valid_colors = 0;
+    invalidate_attrs(p);
 }
 
 static void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
@@ -390,9 +395,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
             if (p->read_only) {
                 /* simply copy the reference */
                 q->read_only = 1;
-                q->valid_char = 0;
-                q->valid_colors = 0;
-                q->valid_pos = 0;
+                invalidate_attrs(p);
                 q->data = p->data;
             } else {
                 /* allocate a new page */
@@ -1304,9 +1307,7 @@ int mmap_buffer(EditBuffer *b, const char *filename)
         p->data = ptr;
         p->size = len;
         p->read_only = 1;
-        p->valid_char = 0;
-        p->valid_colors = 0;
-        p->valid_pos = 0;
+        invalidate_attrs(p);
         ptr += len;
         size -= len;
         p++;

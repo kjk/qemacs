@@ -2,29 +2,192 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-[Flags]
-public enum PageFlags
-{
-    PG_READ_ONLY    = 0x1, /* the page is read only */
-    PG_VALID_POS    = 0x2, /* set if the nb_lines / col fields are up to date */
-    PG_VALID_CHAR   = 0x4, /* nb_chars is valid */
-    PG_VALID_COLORS = 0x8  /* color state is valid */
-}
-
 public class Page 
 {
     public int          size { get { return data.Length; } } 
     public byte[]       data;
-    public PageFlags    flags;
+    public bool         read_only; /* the page is read only */
+    public bool         valid_pos; /* set if the nb_lines / col fields are up to date */
+    public bool         valid_char; /* nb_chars is valid */
+    public bool         valid_colors; /* color state is valid */
+
+    public void InvalidateAttributes()
+    {
+        valid_pos = valid_char = valid_colors = false;
+    }
+
     /* the following are needed to handle line / column computation */
     public int          nb_lines; /* Number of '\n' in data */
     public int          col;      /* Number of chars since the last '\n' */
     /* the following is needed for char offset computation */
     public int          nb_chars;
+
+    // TODO: take QECharset into account
+    public static int get_chars(byte[] buf, int size)
+    {
+        int nb_chars = 0;
+        int i = 0;
+        while (i < size)
+        {
+            byte c = buf[i++];
+            if ((c < 0x80) || (c >= 0xc0))
+                nb_chars++;
+        }
+        return nb_chars;
+    }
+
+    /* return the number of lines and column position for a buffer */
+    // TODO: take CharsetDecodeState into account
+    public static void get_pos(byte[] buf, int size, ref int line_ptr, ref int col_ptr)
+    {
+        int line = 0;
+        int i = 0;
+        int lp = 0;
+        const byte nl = (byte)'\n';
+        while (i < size)
+        {
+            if (nl == buf[i++])
+            {
+                lp = i;
+                ++line;
+            }
+        }
+        // TODO: take into account charset
+        int col = size - lp;
+        line_ptr = line;
+        col_ptr = col;
+    }
+
+    // TODO: take QECharset into account
+    public static int goto_char(byte[] buf, int pos)
+    {
+        // TODO: implement me
+        return pos;
+    }
+
+    public void Update()
+    {
+        if (read_only)
+        {
+            byte[] new_data = new byte[data.Length];
+            Buffer.BlockCopy(data, 0, new_data, 0, data.Length);
+            data = new_data;
+            read_only = false;
+        }
+        InvalidateAttributes();
+    }
+}
+
+public class Pages
+{
+    public List<Page> page_table = new List<Page>();
+    public int nb_pages { get { return page_table.Count; } }
+
+    /* page cache */
+    public Page cur_page;
+    public int cur_offset;
+    public int cur_page_idx;
+
+    public int total_size;
+
+    public bool IsOffsetInCache(int offset)
+    {
+        return (null != cur_page) &&
+            (offset >= cur_offset) &&
+            (offset < (cur_offset + cur_page.size));
+    }
+
+    /*
+    public int FindPageIdx(Page p)
+    {
+        for (int i = 0; i < page_table.Count; i++)
+        {
+            if (page_table[i] == p)
+                return i;
+        }
+        return -1;
+    }*/
+
+    public Tuple<Page, int> FindPage(ref int offset_ptr)
+    {
+        int offset = offset_ptr;
+        if (IsOffsetInCache(offset))
+        {
+            offset_ptr -= cur_offset;
+            return new Tuple<Page,int>(cur_page, cur_page_idx);
+        }
+
+        int idx = 0;
+        foreach (Page p in page_table)
+        {
+            if (offset >= p.size)
+                offset -= p.size;
+            else
+            {
+                cur_page = p;
+                cur_offset = offset_ptr - offset;
+                cur_page_idx = idx;
+                offset_ptr = offset;
+                return new Tuple<Page, int>(p, idx);
+            }
+            ++idx;
+        }
+        return new Tuple<Page, int>(null, -1);
+    }
+
+    public Page PageAfter(Page p)
+    {
+        for (int i = 0; i < page_table.Count; i++)
+        {
+            if (page_table[i] == p)
+                return page_table[i + 1];
+        }
+        return null;
+    }
+
+    public void ReadWrite(int offset, byte[] buf, int size, bool do_write)
+    {
+        int len;
+        Tuple<Page,int> pageWithIdx = FindPage(ref offset);
+        Page p = pageWithIdx.Item1;
+        int idx = pageWithIdx.Item2;
+        int bufOffset = 0;
+        while (size > 0)
+        {
+            len = p.size - offset;
+            if (len > size)
+                len = size;
+            if (do_write)
+            {
+                p.Update();
+                Buffer.BlockCopy(buf, bufOffset, p.data, offset, len);
+            }
+            else
+                Buffer.BlockCopy(p.data, offset, buf, bufOffset, len);
+            bufOffset += len;
+            size -= len;
+            offset += len;
+            if (offset >= p.size)
+            {
+                ++idx;
+                p = page_table[idx];
+                offset = 0;
+            }
+        }
+    }
+
+    public void Delete(int offset, int size)
+    {
+        /* 
+        total_size -= size;
+        var pageWithIdx = FindPage(ref offset);
+        int n = 0;
+        int del_start = -1;
+        */
+    }
 }
 
 /* high level buffer type handling */
-// TODO: make it an interface?
 public interface IEditBufferDataType 
 {
     string name { get; } /* name of buffer data type (text, image, ...) */
@@ -137,13 +300,14 @@ public class EditBuffer
     void update_page(Page p)
     {
         /* if the page is read only, copy it */
-        if ((p.flags & PageFlags.PG_READ_ONLY) == PageFlags.PG_READ_ONLY) {
+        if (p.read_only) {
             byte[] new_data = new byte[p.size];
             Buffer.BlockCopy(p.data, 0, new_data, 0, p.size);
             p.data = new_data;
-            p.flags &= ~PageFlags.PG_READ_ONLY;
+            p.read_only = false;
         }
-        p.flags &= ~(PageFlags.PG_VALID_POS | PageFlags.PG_VALID_CHAR | PageFlags.PG_VALID_COLORS);
+
+        p.InvalidateAttributes();
     }
 
     /* internal function for insertion : 'buf' of size 'size' at the
