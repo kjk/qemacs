@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 public class Page 
@@ -95,6 +96,19 @@ public class Pages
         return (null != cur_page) &&
             (offset >= cur_offset) &&
             (offset < (cur_offset + cur_page.size));
+    }
+
+    public int CalcTotalSize()
+    {
+        int n = 0;
+        foreach (Page p in page_table)
+            n += p.size;
+        return n;
+    }
+
+    void VerifyTotalSize()
+    {
+        Debug.Assert(total_size == CalcTotalSize());
     }
 
     /*
@@ -217,6 +231,7 @@ public class Pages
             --n;
         }
         cur_page = null;
+        VerifyTotalSize();
     }
 }
 
