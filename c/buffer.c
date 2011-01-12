@@ -151,6 +151,20 @@ static void invalidate_attrs(Page *p)
     p->valid_colors = 0;
 }
 
+static void clear_attrs(Page *p)
+{
+    invalidate_attrs(p);
+    p->read_only = 0;
+}
+
+static void copy_attrs(Page *src, Page *dst)
+{
+    dst->valid_pos = src->valid_pos;
+    dst->valid_char = src->valid_char;
+    dst->valid_colors = src->valid_colors;
+    dst->read_only = src->read_only;
+}
+
 /* prepare a page to be written */
 static void update_page(Page *p)
 {
@@ -236,7 +250,7 @@ void pages_delete(Pages *pages, int offset, int size)
         pages->nb_pages -= n;
         memmove(del_start, del_start + n, 
                 (pages->page_table + pages->nb_pages - del_start) * sizeof(Page));
-        pages->page_table = realloc(pages->page_table, pages->nb_pages * sizeof(Page));
+        pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
     }
 
     /* the page cache is no longer valid */
@@ -257,7 +271,7 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
             len = size;
         if (len > 0) {
             update_page(p);
-            p->data = realloc(p->data, p->size + len);
+            p->data = (u8*)realloc(p->data, p->size + len);
             memmove(p->data + len, p->data, p->size);
             memcpy(p->data, buf + size - len, len);
             size -= len;
@@ -269,7 +283,7 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
     n = (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
     if (n > 0) {
         pages->nb_pages += n;
-        pages->page_table = realloc(pages->page_table, pages->nb_pages * sizeof(Page));
+        pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
         p = pages->page_table + page_index;
         memmove(p + n, p, sizeof(Page) * (pages->nb_pages - n - page_index));
         while (size > 0) {
@@ -277,8 +291,8 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
             if (len > MAX_PAGE_SIZE)
                 len = MAX_PAGE_SIZE;
             p->size = len;
-            p->data = malloc(len);
-            p->flags = 0;
+            p->data = (u8*)malloc(len);
+            clear_attrs(p);
             memcpy(p->data, buf, len);
             buf += len;
             size -= len;
@@ -315,7 +329,7 @@ static void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int s
             p = pages->page_table + page_index;
             update_page(p);
             p->size += len - len_out;
-            p->data = realloc(p->data, p->size);
+            p->data = (u8*)realloc(p->data, p->size);
             memmove(p->data + offset + len, p->data + offset, p->size - (offset + len));
             memcpy(p->data + offset, buf, len);
             buf += len;
@@ -364,7 +378,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
                realloced */
             q = dest_pages->page_table + page_index - 1;
             update_page(q);
-            q->data = realloc(q->data, dest_offset);
+            q->data = (u8*)realloc(q->data, dest_offset);
             q->size = dest_offset;
         }
     } else {
@@ -385,7 +399,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
     if (n > 0) {
         /* add the pages */
         dest_pages->nb_pages += n;
-        dest_pages->page_table = realloc(dest_pages->page_table, dest_pages->nb_pages * sizeof(Page));
+        dest_pages->page_table = (Page*)realloc(dest_pages->page_table, dest_pages->nb_pages * sizeof(Page));
         q = dest_pages->page_table + page_index;
         memmove(q + n, q, sizeof(Page) * (dest_pages->nb_pages - n - page_index));
         p = p_start;
@@ -399,7 +413,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
                 q->data = p->data;
             } else {
                 /* allocate a new page */
-                q->flags = 0;
+                clear_attrs(p);
                 q->data = (u8*)malloc(len);
                 memcpy(q->data, p->data, len);
             }

@@ -17,7 +17,6 @@ typedef struct Page {
     unsigned valid_char:1;   /* nb_chars is valid */
     unsigned valid_colors:1; /* color state is valid */
 
-    int flags;
     /* the following are needed to handle line / column computation */
     int nb_lines; /* Number of '\n' in data */
     int col;      /* Number of chars since the last '\n' */
