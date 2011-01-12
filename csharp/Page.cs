@@ -81,6 +81,8 @@ public class Page
 
 public class Pages
 {
+    public const int MAX_PAGE_SIZE = 4096;
+
     public List<Page> page_table = new List<Page>();
     public int nb_pages { get { return page_table.Count; } }
 
@@ -88,7 +90,6 @@ public class Pages
     public Page cur_page;
     public int cur_offset;
     public int cur_page_idx;
-
     public int total_size;
 
     public bool IsOffsetInCache(int offset)
@@ -232,6 +233,22 @@ public class Pages
         }
         cur_page = null;
         VerifyTotalSize();
+    }
+
+    void Insert(int page_index, byte[] buf, int size)
+    {
+        if (page_index < nb_pages)
+        {
+            Page p = page_table[page_index];
+            int len = Math.Min(MAX_PAGE_SIZE - p.size, size);
+            if (len > 0)
+            {
+                p.Update();
+                // TODO: insert data
+            }
+
+        }
+
     }
 }
 
