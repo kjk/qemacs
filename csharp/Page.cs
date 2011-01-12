@@ -154,9 +154,7 @@ public class Pages
         int bufOffset = 0;
         while (size > 0)
         {
-            len = p.size - offset;
-            if (len > size)
-                len = size;
+            len = Math.Min(p.size - offset, size);
             if (do_write)
             {
                 p.Update();
@@ -178,12 +176,47 @@ public class Pages
 
     public void Delete(int offset, int size)
     {
-        /* 
         total_size -= size;
         var pageWithIdx = FindPage(ref offset);
         int n = 0;
         int del_start = -1;
-        */
+        int len;
+        Page p = pageWithIdx.Item1;
+        int idx = pageWithIdx.Item2;
+        while (size > 0)
+        {
+            len = Math.Min(p.size - offset, size);
+            if (len == p.size)
+            {
+                if (-1 == del_start)
+                    del_start = idx;
+                ++idx;
+                offset = 0;
+                n++;
+            }
+            else
+            {
+                p.Update();
+                Buffer.BlockCopy(p.data, offset + len, p.data, offset, p.size - offset - len);
+                int new_size = p.size - len;
+                byte[] new_data = new byte[new_size];
+                Buffer.BlockCopy(p.data, 0, new_data, 0, new_size);
+                p.data = new_data;
+                offset += len;
+                if (offset >= p.size)
+                {
+                    offset = 0;
+                    p = page_table[++idx];
+                }
+            }
+            size -= len;
+        }
+        while (n > 0)
+        {
+            page_table.RemoveAt(del_start);
+            --n;
+        }
+        cur_page = null;
     }
 }
 
