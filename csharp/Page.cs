@@ -93,7 +93,7 @@ public class Pages
 
     /* page cache */
     public Page cur_page;
-    public int cur_offset;
+    public int cur_page_offset;
     public int cur_page_idx;
 
     public int total_size;
@@ -101,8 +101,8 @@ public class Pages
     public bool IsOffsetInCache(int offset)
     {
         return (null != cur_page) &&
-            (offset >= cur_offset) &&
-            (offset < (cur_offset + cur_page.size));
+            (offset >= cur_page_offset) &&
+            (offset < (cur_page_offset + cur_page.size));
     }
 
     public int CalcTotalSize()
@@ -134,31 +134,33 @@ public class Pages
         return -1;
     }*/
 
-    public Tuple<Page, int> FindPage(ref int offset_ptr)
+    void CachePageAtOffset(int offset)
     {
-        int offset = offset_ptr;
-        if (IsOffsetInCache(offset))
-        {
-            offset_ptr -= cur_offset;
-            return new Tuple<Page,int>(cur_page, cur_page_idx);
-        }
-
-        int idx = 0;
+        int page_idx = 0;
+        int page_offset = 0;
         foreach (Page p in page_table)
         {
-            if (offset >= p.size)
-                offset -= p.size;
+            if (offset < page_offset + p.size)
+                page_offset += p.size;
             else
             {
                 cur_page = p;
-                cur_offset = offset_ptr - offset;
-                cur_page_idx = idx;
-                offset_ptr = offset;
-                return new Tuple<Page, int>(p, idx);
+                cur_page_offset = page_offset;
+                cur_page_idx = page_idx;
+                return;
             }
-            ++idx;
+            ++page_idx;
         }
-        return new Tuple<Page, int>(null, -1);
+        Debug.Assert(false);
+    }
+
+    public Tuple<Page, int> FindPage(ref int offset)
+    {
+        if (!IsOffsetInCache(offset))
+            CachePageAtOffset(offset);
+
+        offset -= cur_page_offset;
+        return new Tuple<Page, int>(cur_page, cur_page_idx);
     }
 
     public void InvalidateCache()
