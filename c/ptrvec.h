@@ -49,15 +49,6 @@ public:
         return len;
     }
 
-    void Append(T *el) {
-        EnsureCap(len + 1);
-        els[len++] = el;
-    }
-
-    void Append2(T *el) {
-        MakeSpaceAt(len)[0] = el;
-    }
-
     T** MakeSpaceAt(int idx, int count=1) {
         EnsureCap(len + count);
         T** res = &(els[idx]);
@@ -72,8 +63,11 @@ public:
     }
 
     void InsertAt(int idx, T *el) {
-        T** buf = MakeSpaceAt(idx, 1);
-        buf[0] el;
+        MakeSpaceAt(idx, 1)[0] = el;;
+    }
+
+    void Append(T *el) {
+        InsertAt(len);
     }
 
     T *RemoveAt(int idx, int count=1) {
