@@ -38,29 +38,6 @@ extern EditBufferDataType raw_data_type;
 
 EditBufferDataType *first_buffer_data_type = NULL;
 
-
-static int goto_char(u8 *buf, int pos, QECharset *charset)
-{
-    int nb_chars, c;
-    u8 *buf_ptr;
-
-    if (charset != &charset_utf8)
-        return pos;
-
-    nb_chars = 0;
-    buf_ptr = buf;
-    for (;;) {
-        c = *buf_ptr;
-        if (c < 0x80 || c >= 0xc0) {
-            if (nb_chars >= pos)
-                break;
-            nb_chars++;
-        }
-        buf_ptr++;
-    }
-    return buf_ptr - buf;
-}
-
 /************************************************************/
 /* basic access to the edit buffer */
 
@@ -642,29 +619,12 @@ int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
 int eb_goto_char(EditBuffer *b, int pos)
 {
     int offset;
-    Page *p, *p_end;
-    Pages *pages;
-
     if (b->charset != &charset_utf8) {
         offset = pos;
         if (offset > eb_total_size(b))
             offset = eb_total_size(b);
     } else {
-        offset = 0;
-        pages = &b->pages;
-        p = pages->page_table;
-        p_end = pages->page_table + pages->nb_pages;
-        while (p < p_end) {
-            p->CalcChars(b->charset);
-            if (pos < p->nb_chars) {
-                offset += goto_char(p->data, pos, b->charset);
-                break;
-            } else {
-                pos -= p->nb_chars;
-                offset += p->size;
-                p++;
-            }
-        }
+        offset = pages_goto_char(&b->pages, b->charset, pos);
     }
     return offset;
 }

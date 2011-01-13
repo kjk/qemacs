@@ -59,6 +59,28 @@ static void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr, CharsetDecod
     *col_ptr = col;
 }
 
+static int goto_char(u8 *buf, int pos, QECharset *charset)
+{
+    int nb_chars, c;
+    u8 *buf_ptr;
+
+    if (charset != &charset_utf8)
+        return pos;
+
+    nb_chars = 0;
+    buf_ptr = buf;
+    for (;;) {
+        c = *buf_ptr;
+        if (c < 0x80 || c >= 0xc0) {
+            if (nb_chars >= pos)
+                break;
+            nb_chars++;
+        }
+        buf_ptr++;
+    }
+    return buf_ptr - buf;
+}
+
 /* prepare a page to be written */
 void Page::PrepareForUpdate()
 {
@@ -426,5 +448,25 @@ the_end:
     *line_ptr = line;
     *col_ptr = col;
     return line;
+}
+
+int pages_goto_char(Pages *pages, QECharset *charset, int pos)
+{
+    Page *p, *p_end;
+    int offset = 0;
+    p = pages->page_table;
+    p_end = pages->page_table + pages->nb_pages;
+    while (p < p_end) {
+        p->CalcChars(charset);
+        if (pos < p->nb_chars) {
+            offset += goto_char(p->data, pos, charset);
+            break;
+        } else {
+            pos -= p->nb_chars;
+            offset += p->size;
+            p++;
+        }
+    }
+    return offset;
 }
 

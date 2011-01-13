@@ -62,8 +62,9 @@ void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write);
 void pages_delete(Pages *pages, int offset, int size);
 void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size);
 void pages_insert_from(Pages *dest_pages, int dest_offset, Pages *src_pages, int src_offset, int size);
-int pages_get_char_offset(Pages *pages, int offset, QECharset *charset);
-int pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset);
+int  pages_get_char_offset(Pages *pages, int offset, QECharset *charset);
+int  pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset);
+int  pages_goto_char(Pages *pages, QECharset *charset, int pos);
 
 #endif
 
