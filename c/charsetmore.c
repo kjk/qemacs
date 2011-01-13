@@ -90,8 +90,8 @@ unsigned char *encode_8bit(QECharset *charset, unsigned char *q, int c)
 /********************************************************/
 /* JIS */
 
-extern const unsigned short table_jis208[];
-extern const unsigned short table_jis212[];
+const unsigned short *table_jis208;
+const unsigned short *table_jis212;
 
 static int jis0208_decode(int b1, int b2)
 {

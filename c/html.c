@@ -42,7 +42,7 @@ typedef struct HTMLState {
     int parse_flags;   /* can contain XML_HTML and XML_IGNORE_CASE */
 } HTMLState;
 
-extern const char *html_style;
+const char *html_style;
 
 /* recompute cursor offset so that it is visible (find closest box) */
 typedef struct {
