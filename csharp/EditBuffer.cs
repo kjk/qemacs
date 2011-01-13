@@ -8,6 +8,15 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace qemacs
 {
+    public static class EditBufferDataTypes
+    {
+        public static List<IEditBufferDataType> DataTypes = new List<IEditBufferDataType>() { new EditBufferDataTypeRaw() };
+        public static void RegisterDataType(IEditBufferDataType dt)
+        {
+            DataTypes.Add(dt);
+        }
+    }
+
     public class EditBuffer
     {
         [Flags]
@@ -38,8 +47,6 @@ namespace qemacs
         }
 
         public const int NB_LOGS_MAX = 50;
-
-        public List<IEditBufferDataType> DataTypes = new List<IEditBufferDataType>();
 
         Pages pages = new Pages();
         int TotalSize { get { return pages.total_size; } }
@@ -82,16 +89,6 @@ namespace qemacs
         {
             this.name = name;
             this.flags = flags;
-        }
-
-        public EditBuffer()
-        {
-            RegisterDataType(new EditBufferDataTypeRaw());
-        }
-
-        public void RegisterDataType(IEditBufferDataType dt)
-        {
-            DataTypes.Add(dt);
         }
 
         void LimitLogSize()
