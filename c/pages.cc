@@ -22,7 +22,7 @@ static int get_chars(u8 *buf, int size, QECharset *charset)
 }
 
 /* return the number of lines and column position for a buffer */
-void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr, CharsetDecodeState *s)
+static void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr, CharsetDecodeState *s)
 {
     u8 *p, *p1, *lp;
     int line, len, col, ch;
@@ -392,5 +392,39 @@ int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)
     }
     pos += get_chars(p->data, offset, charset);
     return pos;
+}
+
+int pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset)
+{
+    Page *p, *p_end;
+    int line, col, line1, col1;
+    QASSERT(offset >= 0);
+    line = 0;
+    col = 0;
+    p = pages->page_table;
+    p_end = p + pages->nb_pages;
+    for (;;) {
+        if (p >= p_end)
+            goto the_end;
+
+        if (offset < p->size)
+            break;
+        p->CalcPos(charset_state);
+        line += p->nb_lines;
+        if (p->nb_lines)
+            col = 0;
+        col += p->col;
+        offset -= p->size;
+        p++;
+    }
+    get_pos(p->data, offset, &line1, &col1, charset_state);
+    line += line1;
+    if (line1)
+        col = 0;
+    col += col1;
+the_end:
+    *line_ptr = line;
+    *col_ptr = col;
+    return line;
 }
 

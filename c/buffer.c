@@ -631,42 +631,10 @@ int eb_goto_pos(EditBuffer *b, int line1, int col1)
     }
     return eb_total_size(b);
 }
-        
+
 int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
 {
-    Page *p, *p_end;
-    int line, col, line1, col1;
-    Pages *pages;
-
-    QASSERT(offset >= 0);
-
-    line = 0;
-    col = 0;
-    pages = &b->pages;
-    p = pages->page_table;
-    p_end = p + pages->nb_pages;
-    for (;;) {
-        if (p >= p_end)
-            goto the_end;
-        if (offset < p->size)
-            break;
-        p->CalcPos(&b->charset_state);
-        line += p->nb_lines;
-        if (p->nb_lines)
-            col = 0;
-        col += p->col;
-        offset -= p->size;
-        p++;
-    }
-    get_pos(p->data, offset, &line1, &col1, &b->charset_state);
-    line += line1;
-    if (line1)
-        col = 0;
-    col += col1;
- the_end:
-    *line_ptr = line;
-    *col_ptr = col;
-    return line;
+    return pages_get_pos(&b->pages, &b->charset_state, line_ptr, col_ptr, offset);
 }
 
 /* gives the byte offset of a given character, taking the charset into
