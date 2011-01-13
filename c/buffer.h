@@ -1,28 +1,12 @@
-#ifndef PAGE_H__
-#define PAGE_H__
+#ifndef BUFFER_H__
+#define BUFFER_H__
 
 /* begin to mmap files from this size */
 #define MIN_MMAP_SIZE (1024*1024)
 
-#define MAX_PAGE_SIZE 4096
-//#define MAX_PAGE_SIZE 16
-
 #define NB_LOGS_MAX 50
 
-typedef struct Page {
-    int size; /* data size */ 
-    u8 *data;
-    unsigned read_only:1;    /* the page is read only */
-    unsigned valid_pos:1;    /* set if the nb_lines / col fields are up to date */
-    unsigned valid_char:1;   /* nb_chars is valid */
-    unsigned valid_colors:1; /* color state is valid */
-
-    /* the following are needed to handle line / column computation */
-    int nb_lines; /* Number of '\n' in data */
-    int col;      /* Number of chars since the last '\n' */
-    /* the following is needed for char offset computation */
-    int nb_chars;
-} Page;
+#include "pages.h"
 
 typedef struct Pages {
     Page *page_table;

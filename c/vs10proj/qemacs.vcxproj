@@ -132,6 +132,7 @@
     <ClCompile Include="..\input.c" />
     <ClCompile Include="..\json.c" />
     <ClCompile Include="..\list.c" />
+    <ClCompile Include="..\pages.cc" />
     <ClCompile Include="..\qe.c" />
     <ClCompile Include="..\qfribidi.c" />
     <ClCompile Include="..\strbuf.c" />

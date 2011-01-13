@@ -38,66 +38,6 @@ extern EditBufferDataType raw_data_type;
 
 EditBufferDataType *first_buffer_data_type = NULL;
 
-/************************************************************/
-/* char offset computation */
-
-static int get_chars(u8 *buf, int size, QECharset *charset)
-{
-    int nb_chars, c;
-    u8 *buf_end, *buf_ptr;
-
-    if (charset != &charset_utf8)
-        return size;
-
-    nb_chars = 0;
-    buf_ptr = buf;
-    buf_end = buf + size;
-    while (buf_ptr < buf_end) {
-        c = *buf_ptr++;
-        if (c < 0x80 || c >= 0xc0)
-            nb_chars++;
-    }
-    return nb_chars;
-}
-
-/* return the number of lines and column position for a buffer */
-static void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr, 
-                    CharsetDecodeState *s)
-{
-    u8 *p, *p1, *lp;
-    int line, len, col, ch;
-
-    QASSERT(size >= 0);
-
-    line = 0;
-    p = buf;
-    lp = p;
-    p1 = p + size;
-    for (;;) {
-        p = (u8*)memchr(p, '\n', p1 - p);
-        if (!p)
-            break;
-        p++;
-        lp = p;
-        line++;
-    }
-    /* now compute number of chars (XXX: potential problem if out of
-       block, but for UTF8 it works) */
-    col = 0;
-    while (lp < p1) {
-        ch = s->table[*lp];
-        if (ch == ESCAPE_CHAR) {
-            /* XXX: utf8 only is handled */
-            len = utf8_length[*lp];
-            lp += len;
-        } else {
-            lp++;
-        }
-        col++;
-    }
-    *line_ptr = line;
-    *col_ptr = col;
-}
 
 static int goto_char(u8 *buf, int pos, QECharset *charset)
 {
@@ -151,45 +91,6 @@ static Page *pages_find_page(Pages *pages, int *offset_ptr)
     pages->cur_offset = *offset_ptr - offset;
     *offset_ptr = offset;
     return p;
-}
-
-static void invalidate_attrs(Page *p)
-{
-    p->valid_pos = 0;
-    p->valid_char = 0;
-    p->valid_colors = 0;
-}
-
-static void clear_attrs(Page *p)
-{
-    invalidate_attrs(p);
-    p->read_only = 0;
-}
-
-static void copy_attrs(Page *src, Page *dst)
-{
-    dst->valid_pos = src->valid_pos;
-    dst->valid_char = src->valid_char;
-    dst->valid_colors = src->valid_colors;
-    dst->read_only = src->read_only;
-}
-
-/* prepare a page to be written */
-static void update_page(Page *p)
-{
-    u8 *buf;
-
-    /* if the page is read only, copy it */
-    if (p->read_only) {
-        buf = (u8*)malloc(p->size);
-        /* XXX: should return an error */
-        if (!buf)
-            return;
-        memcpy(buf, p->data, p->size);
-        p->data = buf;
-        p->read_only = 0;
-    }
-    invalidate_attrs(p);
 }
 
 static void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
@@ -441,22 +342,6 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
 
     /* the page cache is no longer valid */
     dest_pages->cur_page = NULL;
-}
-
-void page_calc_chars(Page *p, QECharset *charset)
-{
-    if (!p->valid_char) {
-        p->valid_char = 1;
-        p->nb_chars = get_chars(p->data, p->size, charset);
-    }
-}
-
-void page_calc_pos(Page *p, CharsetDecodeState *charset_state)
-{
-    if (!p->valid_pos) {
-        p->valid_pos = 1;
-        get_pos(p->data, p->size, &p->nb_lines, &p->col, charset_state);
-    }
 }
 
 /* Read or write in the buffer. We must have 0 <= offset < b->total_size */

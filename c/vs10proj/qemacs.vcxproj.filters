@@ -99,6 +99,9 @@
     <ClCompile Include="..\libqhtml\xmlparse.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\pages.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\config.h">
