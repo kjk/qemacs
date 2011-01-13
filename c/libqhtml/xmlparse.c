@@ -399,7 +399,8 @@ static void html_eval_tag(XMLState *s, CSSBox *box)
     const char *value;
     CSSProperty *first_prop, **last_prop;
     QEColor color;
-    int width, height, val, type;
+    int width, height, type;
+    int val;
     int border, padding;
     CSSPropertyValue arg;
     CSSPropertyValue args[2];
@@ -614,7 +615,7 @@ static void html_eval_tag(XMLState *s, CSSBox *box)
         else
             val = CSS_ID_value;
         /* NOTE: only works with digits */
-        val = css_attr_int(box, val, 0);
+        val = css_attr_int(box, (CSSIdent)val, 0);
         if (val > 0) {
             args[0].type = CSS_VALUE_IDENT;
             args[0].u.val = CSS_ID_list_item;

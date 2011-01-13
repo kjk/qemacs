@@ -185,9 +185,7 @@ void css_add_prop_values(CSSProperty ***last_prop,
                          int property_index, 
                          int nb_values, CSSPropertyValue *val_ptr)
 {
-    CSSProperty *prop;
-
-    prop = malloc(sizeof(CSSProperty) + 
+    CSSProperty *prop = (CSSProperty*)malloc(sizeof(CSSProperty) + 
                   (nb_values - 1) * sizeof(CSSPropertyValue));
     if (!prop)
         return;
@@ -612,9 +610,7 @@ void css_dump_properties(CSSProperty *prop)
 
 CSSStyleSheet *css_new_style_sheet(void)
 {
-    CSSStyleSheet *s;
-
-    s = malloc(sizeof(CSSStyleSheet));
+    CSSStyleSheet *s = (CSSStyleSheet*)malloc(sizeof(CSSStyleSheet));
     if (!s)
         return NULL;
     memset(s, 0, sizeof(*s));
@@ -754,7 +750,7 @@ void add_attribute(CSSStyleSheetAttributeEntry ***last_attr,
 {
     CSSStyleSheetAttributeEntry *ae;
     
-    ae = malloc(sizeof(CSSStyleSheetAttributeEntry) + strlen(value));
+    ae = (CSSStyleSheetAttributeEntry*)malloc(sizeof(CSSStyleSheetAttributeEntry) + strlen(value));
     ae->attr = attr;
     ae->op = op;
     strcpy(ae->value, value);
@@ -833,7 +829,7 @@ void css_merge_style_sheet(CSSStyleSheet *s, CSSStyleSheet *a)
         /* add selector operations */
         pss = &e1->sel.next;
         for (ss = e->sel.next; ss != NULL; ss = ss->next) {
-            ss1 = malloc(sizeof(CSSSimpleSelector));
+            ss1 = (CSSSimpleSelector*)malloc(sizeof(CSSSimpleSelector));
             dup_selector(ss1, ss);
             *pss = ss1;
             pss = &ss1->next;
@@ -1059,7 +1055,7 @@ void css_parse_style_sheet(CSSStyleSheet *s, CSSParseState *b)
                 } else if (isalpha(ch)) {
                     tree_op = CSS_TREE_OP_DESCENDANT;
                 add_tree:
-                    ss1 = malloc(sizeof(CSSSimpleSelector));
+                    ss1 = (CSSSimpleSelector*)malloc(sizeof(CSSSimpleSelector));
                     if (ss1) {
                         memcpy(ss1, ss, sizeof(CSSSimpleSelector));
                         last_ss = ss1;

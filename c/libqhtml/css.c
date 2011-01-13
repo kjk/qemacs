@@ -311,10 +311,10 @@ CSSIdent css_new_ident(const char *str)
         }
         p = p->hash_next;
     }
-    p = malloc(sizeof(CSSIdentEntry) + strlen(str));
+    p = (CSSIdentEntry*)malloc(sizeof(CSSIdentEntry) + strlen(str));
     if (!p)
         return CSS_ID_NIL;
-    p->id = table_ident_nb;
+    p->id = (CSSIdent)table_ident_nb;
     strcpy(p->str, str);
     p->hash_next = *pp;
     *pp = p;

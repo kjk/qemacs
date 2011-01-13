@@ -805,7 +805,7 @@ int cursor_func(DisplayState *ds,
                 int offset1, int offset2, int line_num,
                 int x, int y, int w, int h, int hex_mode)
 {
-    CursorContext *m = ds->cursor_opaque;
+    CursorContext *m = (CursorContext*)ds->cursor_opaque;
 
     if (m->offsetc >= offset1 &&
         m->offsetc < offset2) {
@@ -852,7 +852,7 @@ static int down_cursor_func(DisplayState *ds,
                             int x, int y, int w, int h, int hex_mode)
 {
     int d;
-    MoveContext *m = ds->cursor_opaque;
+    MoveContext *m = (MoveContext*)ds->cursor_opaque;
 
     if (line_num == m->yd) {
         /* find the closest char */
@@ -962,7 +962,7 @@ static int scroll_cursor_func(DisplayState *ds,
                               int offset1, int offset2, int line_num,
                               int x, int y, int w, int h, int hex_mode)
 {
-    ScrollContext *m = ds->cursor_opaque;
+    ScrollContext *m = (ScrollContext*)ds->cursor_opaque;
     int y1;
 
     y1 = y + h;
@@ -1090,7 +1090,7 @@ static int left_right_cursor_func(DisplayState *ds,
                                   int x, int y, int w, int h, int hex_mode)
 {
     int d;
-    LeftRightMoveContext *m = ds->cursor_opaque;
+    LeftRightMoveContext *m = (LeftRightMoveContext*)ds->cursor_opaque;
 
     if (line_num == m->yd && 
         ((m->dir < 0 && x < m->xd) || 
@@ -1200,7 +1200,7 @@ static int mouse_goto_func(DisplayState *ds,
                            int offset1, int offset2, int line_num,
                            int x, int y, int w, int h, int hex_mode)
 {
-    MouseGotoContext *m = ds->cursor_opaque;
+    MouseGotoContext *m = (MouseGotoContext*)ds->cursor_opaque;
     int dy, dx;
 
     dy = seg_dist(m->yd, y, y + h);
@@ -2287,7 +2287,7 @@ static void flush_line(DisplayState *s,
             /* realloc shadow */
             int n = e->shadow_nb_lines;
             e->shadow_nb_lines = n + LINE_SHADOW_INCR;
-            e->line_shadow = realloc(e->line_shadow, 
+            e->line_shadow = (QELineShadow*)realloc(e->line_shadow, 
                                      e->shadow_nb_lines * sizeof(QELineShadow));
             /* put an impossible value so that we redraw */
             memset(&e->line_shadow[n], 0xff, 
@@ -2849,7 +2849,7 @@ int get_colorized_line(EditState *s, unsigned int *buf, int buf_size,
 {
     int len, l, line, col, offset;
     int colorize_state;
-    unsigned char *ptr;
+    u8 *ptr;
     
     /* invalidate cache if needed */
     if (s->colorize_max_valid_offset != MAXINT) {
@@ -2863,7 +2863,7 @@ int get_colorized_line(EditState *s, unsigned int *buf, int buf_size,
     /* realloc line buffer if needed */
     if ((line_num + 2) > s->colorize_nb_lines) {
         s->colorize_nb_lines = line_num + 2 + COLORIZED_LINE_PREALLOC_SIZE;
-        ptr = realloc(s->colorize_states, s->colorize_nb_lines);
+        ptr = (u8*)realloc(s->colorize_states, s->colorize_nb_lines);
         if (!ptr)
             return 0;
         s->colorize_states = ptr;
@@ -2908,7 +2908,7 @@ static void colorize_callback(EditBuffer *b,
                               int offset,
                               int size)
 {
-    EditState *e = opaque;
+    EditState *e = (EditState*)opaque;
 
     if (offset < e->colorize_max_valid_offset)
         e->colorize_max_valid_offset = offset;
@@ -3229,19 +3229,19 @@ void call_func(void *func, int nb_args, void **args,
         ((void (*)())func)();
         break;
     case 1:
-        ((void (*)())func)(args[0]);
+        ((void (*)(void*))func)(args[0]);
         break;
     case 2:
-        ((void (*)())func)(args[0], args[1]);
+        ((void (*)(void*,void*))func)(args[0], args[1]);
         break;
     case 3:
-        ((void (*)())func)(args[0], args[1], args[2]);
+        ((void (*)(void*,void*,void*))func)(args[0], args[1], args[2]);
         break;
     case 4:
-        ((void (*)())func)(args[0], args[1], args[2], args[3]);
+        ((void (*)(void*,void*,void*,void*))func)(args[0], args[1], args[2], args[3]);
         break;
     case 5:
-        ((void (*)())func)(args[0], args[1], args[2], args[3], args[4]);
+        ((void (*)(void*,void*,void*,void*,void*))func)(args[0], args[1], args[2], args[3], args[4]);
         break;
     default:
         return;
@@ -3344,7 +3344,7 @@ void exec_command(EditState *s, CmdDef *d, int argval)
         }
     }
     
-    es = malloc(sizeof(ExecCmdState));
+    es = (ExecCmdState*)malloc(sizeof(ExecCmdState));
     if (!es)
         return;
 
@@ -3487,7 +3487,7 @@ static void free_cmd(ExecCmdState *es)
    called */
 static void arg_edit_cb(void *opaque, char *str)
 {
-    ExecCmdState *es = opaque;
+    ExecCmdState *es = (ExecCmdState*)opaque;
     int index, val;
     char *p;
 
@@ -3703,13 +3703,13 @@ void do_define_kbd_macro(EditState *s, const char *name, const char *keys,
     char *macro_name, *p;
 
     size = strlen(name) + 1;
-    macro_name = malloc(size + 2);
+    macro_name = (char*)malloc(size + 2);
     memcpy(macro_name, name, size);
     p = macro_name + size;
     *p++ = 'S';
     *p++ = '\0';
 
-    def = malloc(2 * sizeof(CmdDef));
+    def = (CmdDef*)malloc(2 * sizeof(CmdDef));
     memset(def, 0, sizeof(CmdDef) * 2);
     def->key = def->alt_key = KEY_NONE;
     def->name = macro_name;
@@ -3730,7 +3730,7 @@ static void macro_add_key(int key)
 
     if (qs->nb_macro_keys >= qs->macro_keys_size) {
         new_size = qs->macro_keys_size + MACRO_KEY_INCR;
-        keys = realloc(qs->macro_keys, new_size * sizeof(unsigned short));
+        keys = (unsigned short*)realloc(qs->macro_keys, new_size * sizeof(unsigned short));
         if (!keys)
             return;
         qs->macro_keys = keys;
@@ -4136,7 +4136,7 @@ EditState *edit_new(EditBuffer *b,
     EditState *s;
     QEmacsState *qs = &qe_state;
     
-    s = malloc(sizeof(EditState));
+    s = (EditState*)malloc(sizeof(EditState));
     if (!s)
         return NULL;
     memset(s, 0, sizeof(EditState));
@@ -4292,7 +4292,7 @@ void register_completion(const char *name, CompletionFunc completion_func)
 {
     CompletionEntry **lp, *p;
 
-    p = malloc(sizeof(CompletionEntry));
+    p = (CompletionEntry*)malloc(sizeof(CompletionEntry));
     if (!p)
         return;
     p->name = name;
@@ -4460,7 +4460,7 @@ static StringArray *get_history(const char *name)
             return &p->history;
     }
     /* not found: allocate history list */
-    p = malloc(sizeof(HistoryEntry));
+    p = (HistoryEntry*)malloc(sizeof(HistoryEntry));
     if (!p)
         return NULL;
     memset(p, 0, sizeof(HistoryEntry));
@@ -4833,7 +4833,7 @@ static void kill_buffer_confirm_cb(void *opaque, char *reply)
     free(reply);
     if (!yes_replied)
         return;
-    kill_buffer_noconfirm(opaque);
+    kill_buffer_noconfirm((EditBuffer*)opaque);
 }
 
 static void kill_buffer_noconfirm(EditBuffer *b)
@@ -5108,7 +5108,7 @@ void do_save(EditState *s, int save_as)
 
 static void save_edit_cb(void *opaque, char *filename)
 {
-    EditState *s = opaque;
+    EditState *s = (EditState*)opaque;
     if (!filename)
         return;
     set_filename(s->b, filename);
@@ -5144,15 +5144,14 @@ static void quit_confirm_cb(void *opaque, char *reply);
 void do_quit(EditState *s)
 {
     QEmacsState *qs = s->qe_state;
-    QuitState *is;
 
-    is = malloc(sizeof(QuitState));
+    QuitState *is = (QuitState*)malloc(sizeof(QuitState));
     if (!is)
         return;
     
     /* scan each buffer and ask to save it if it was modified */
     is->modified = 0;
-    is->state = QS_ASK;
+    is->state = QuitState::QS_ASK;
     is->b = qs->first_buffer;
     
     qe_grab_keys(quit_key, is);
@@ -5168,17 +5167,17 @@ static void quit_examine_buffers(QuitState *is)
         b = is->b;
         if (!(b->flags & BF_SYSTEM) && b->filename[0] != '\0' && b->modified) {
             switch (is->state) {
-            case QS_ASK:
+            case QuitState::QS_ASK:
                 /* XXX: display cursor */
                 put_status(NULL, "Save file %s? (y, n, !, ., q) ", 
                            b->filename);
                 dpy_flush(&global_screen);
                 /* will wait for a key */
                 return;
-            case QS_NOSAVE:
+            case QuitState::QS_NOSAVE:
                 is->modified = 1;
                 break;
-            case QS_SAVE:
+            case QuitState::QS_SAVE:
                 save_buffer(b);
                 break;
             }
@@ -5201,7 +5200,7 @@ static void quit_examine_buffers(QuitState *is)
 
 static void quit_key(void *opaque, int ch)
 {
-    QuitState *is = opaque;
+    QuitState *is = (QuitState*)opaque;
     EditBuffer *b;
 
     switch (ch) {
@@ -5215,16 +5214,16 @@ static void quit_key(void *opaque, int ch)
         break;
     case 'q':
     case KEY_RET:
-        is->state = QS_NOSAVE;
+        is->state = QuitState::QS_NOSAVE;
         is->modified = 1;
         break;
     case '!':
         /* save all buffers */
-        is->state = QS_SAVE;
+        is->state = QuitState::QS_SAVE;
         goto do_save;
     case '.':
         /* save current and exit */
-        is->state = QS_NOSAVE;
+        is->state = QuitState::QS_NOSAVE;
     do_save:
         b = is->b;
         save_buffer(b);
@@ -5470,7 +5469,7 @@ static void isearch_display(ISearchState *is)
 
 static void isearch_key(void *opaque, int ch)
 {
-    ISearchState *is = opaque;
+    ISearchState *is = (ISearchState*)opaque;
     EditState *s = is->s;
     int i, j;
 
@@ -5553,9 +5552,7 @@ static void isearch_key(void *opaque, int ch)
 /* XXX: handle busy */
 void do_isearch(EditState *s, int dir)
 {
-    ISearchState *is;
-
-    is = malloc(sizeof(ISearchState));
+    ISearchState *is = (ISearchState*)malloc(sizeof(ISearchState));
     if (!is)
         return;
     is->s = s;
@@ -5668,7 +5665,7 @@ static void query_replace_display(QueryReplaceState *is)
 
 static void query_replace_key(void *opaque, int ch)
 {
-    QueryReplaceState *is = opaque;
+    QueryReplaceState *is = (QueryReplaceState*)opaque;
 
     switch (ch) {
     case 'y':
@@ -5692,12 +5689,10 @@ static void query_replace(EditState *s,
                           const char *search_str,
                           const char *replace_str, int all)
 {
-    QueryReplaceState *is;
-    
     if (s->b->flags & BF_READONLY)
         return;
 
-    is = malloc(sizeof(QueryReplaceState));
+    QueryReplaceState *is = (QueryReplaceState*)malloc(sizeof(QueryReplaceState));
     if (!is)
         return;
     is->s = s;
@@ -6503,8 +6498,7 @@ int text_mode_init(EditState *s, ModeSavedData *saved_data)
 /* generic save mode data (saves text presentation information) */
 ModeSavedData *generic_mode_save_data(EditState *s)
 {
-    ModeSavedData *saved_data;
-    saved_data = malloc(sizeof(ModeSavedData));
+    ModeSavedData *saved_data = (ModeSavedData*)malloc(sizeof(ModeSavedData));
     if (!saved_data)
         return NULL;
     saved_data->mode = s->mode;
@@ -7273,7 +7267,7 @@ typedef struct QEArgs {
 void qe_init(void *opaque)
 {
     QEmacsState *   qs = &qe_state;
-    QEArgs *        args = opaque;
+    QEArgs *        args = (QEArgs*)opaque;
     int             argc = args->argc;
     char **         argv = args->argv;
     EditState *     s;
