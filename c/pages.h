@@ -68,6 +68,7 @@ int  pages_get_char_offset(Pages *pages, int offset, QECharset *charset);
 int  pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset);
 int  pages_goto_char(Pages *pages, QECharset *charset, int pos);
 int  pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int *next_offset);
+int  pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset);
 
 #endif
 

@@ -495,39 +495,7 @@ int eb_nextc(EditBuffer *b, int offset, int *next_offset)
 /* XXX: suppress that */
 int eb_prevc(EditBuffer *b, int offset, int *prev_offset)
 {
-    int ch;
-    u8 buf[MAX_CHAR_BYTES], *q;
-
-    if (offset <= 0) {
-        offset = 0;
-        ch = '\n';
-    } else {
-        /* XXX: it cannot be generic here. Should use the
-           line/column system to be really generic */
-        offset--;
-        q = buf + sizeof(buf) - 1;
-        eb_read(b, offset, q, 1);
-        if (b->charset == &charset_utf8) {
-            while (*q >= 0x80 && *q < 0xc0) {
-                if (offset == 0 || q == buf) {
-                    /* error : take only previous char */
-                    offset += buf - 1 - q;
-                    ch = buf[sizeof(buf) - 1];
-                    goto the_end;
-                }
-                offset--;
-                q--;
-                eb_read(b, offset, q, 1);
-            }
-            ch = utf8_decode((const char **)(void *)&q);
-        } else {
-            ch = *q;
-        }
-    }
- the_end:
-    if (prev_offset)
-        *prev_offset = offset;
-    return ch;
+    return pages_prevc(&b->pages, b->charset, offset, prev_offset);
 }
 
 int eb_goto_pos(EditBuffer *b, int line1, int col1)
