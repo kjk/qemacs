@@ -135,15 +135,6 @@ typedef struct EditBufferDataType {
     struct EditBufferDataType *next;
 } EditBufferDataType;
 
-/* the log buffer is used for the undo operation */
-/* header of log operation */
-typedef struct LogBuffer {
-    u8 op;
-    u8 was_modified;
-    int offset;
-    int size;
-} LogBuffer;
-
 extern EditBuffer *trace_buffer;
 
 void eb_init(void);

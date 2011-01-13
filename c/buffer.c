@@ -22,6 +22,15 @@
 #endif
 #include <assert.h>
 
+/* the log buffer is used for the undo operation */
+/* header of log operation */
+typedef struct LogBuffer {
+    u8 op;
+    u8 was_modified;
+    int offset;
+    int size;
+} LogBuffer;
+
 static void eb_addlog(EditBuffer *b, enum LogOperation op, 
                       int offset, int size);
 
@@ -744,10 +753,32 @@ void eb_offset_callback(EditBuffer *b,
 /************************************************************/
 /* undo buffer */
 
+static void eb_limit_log_size(EditBuffer *b)
+{
+    LogBuffer lb;
+    int len;
+
+    /* XXX: better test to limit size */
+    if (b->nb_logs < NB_LOGS_MAX-1)
+        return;
+
+    /* no free space, delete least recent entry */
+    eb_read(b->log_buffer, 0, (unsigned char *)&lb, sizeof(LogBuffer));
+    len = lb.size;
+    if (lb.op == LOGOP_INSERT)
+        len = 0;
+    len += sizeof(LogBuffer) + sizeof(int);
+    eb_delete(b->log_buffer, 0, len);
+    b->log_new_index -= len;
+    if (b->log_current > 1)
+        b->log_current -= len;
+    b->nb_logs--;
+}
+
 static void eb_addlog(EditBuffer *b, enum LogOperation op, 
                       int offset, int size)
 {
-    int was_modified, len, size_trailer;
+    int was_modified, size_trailer;
     LogBuffer lb;
     EditBufferCallbackList *l;
 
@@ -767,20 +798,8 @@ static void eb_addlog(EditBuffer *b, enum LogOperation op,
         if (!b->log_buffer)
             return;
     }
-    /* XXX: better test to limit size */
-    if (b->nb_logs >= (NB_LOGS_MAX-1)) {
-        /* no free space, delete least recent entry */
-        eb_read(b->log_buffer, 0, (unsigned char *)&lb, sizeof(LogBuffer));
-        len = lb.size;
-        if (lb.op == LOGOP_INSERT)
-            len = 0;
-        len += sizeof(LogBuffer) + sizeof(int);
-        eb_delete(b->log_buffer, 0, len);
-        b->log_new_index -= len;
-        if (b->log_current > 1)
-            b->log_current -= len;
-        b->nb_logs--;
-    }
+
+    eb_limit_log_size(b);
 
     /* header */
     lb.op = op;
