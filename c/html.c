@@ -57,7 +57,7 @@ typedef struct {
 static int recompute_offset_func(void *opaque, CSSBox *box,
                                  int x0, int y0)
 {
-    RecomputeOffsetData *data = opaque;
+    RecomputeOffsetData *data = (RecomputeOffsetData*)opaque;
     int offsets[MAX_LINE_SIZE+1];
     unsigned int line_buf[MAX_LINE_SIZE];
     int len, d, i, offset;
@@ -83,7 +83,7 @@ static int recompute_offset_func(void *opaque, CSSBox *box,
 
 static void recompute_offset(EditState *s)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     RecomputeOffsetData data;
 
     data.ctx = hs->css_ctx;
@@ -138,7 +138,7 @@ static int html_test_abort(void *opaque)
 
 static void html_display(EditState *s)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     CSSRect cursor_pos;
     DirType dirc;
     int n, cursor_found, d, ret, sel_start, sel_end;
@@ -354,7 +354,7 @@ typedef struct {
 
 static int scroll_func(void *opaque, CSSBox *box, int x, int y)
 {
-    ScrollContext *m = opaque;
+    ScrollContext *m = (ScrollContext*)opaque;
     int y1;
 
     if (box->height == 0)
@@ -385,7 +385,7 @@ static int scroll_func(void *opaque, CSSBox *box, int x, int y)
 
 static void html_scroll_up_down(EditState *s, int dir)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     ScrollContext m1, *m = &m1;
     int h;
 
@@ -448,7 +448,7 @@ static int seg_dist(int x, int x1, int x2)
 
 static int up_down_func(void *opaque, CSSBox *box, int x, int y)
 {
-    MoveContext *m = opaque;
+    MoveContext *m = (MoveContext*)opaque;
     int d, y1;
 
     if (box->height == 0 || box->width == 0)
@@ -497,7 +497,7 @@ static int up_down_last_x = -1;
 
 static void html_move_up_down1(EditState *s, int dir, int xtarget)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     MoveContext m1, *m = &m1;
     CSSRect cursor_pos;
     int dirc, offset;
@@ -544,7 +544,7 @@ static void html_move_up_down1(EditState *s, int dir, int xtarget)
 
 static void html_move_up_down(EditState *s, int dir, int move_mark)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
 
     if (!hs->up_to_date)
         return;
@@ -569,7 +569,7 @@ typedef struct {
 
 static int left_right_func(void *opaque, CSSBox *box, int x, int y)
 {
-    LeftRightMoveContext *m = opaque;
+    LeftRightMoveContext *m = (LeftRightMoveContext*)opaque;
     int d, x1;
 
     /* only examine boxes which intersect the current one on y axis */
@@ -592,7 +592,7 @@ static int left_right_func(void *opaque, CSSBox *box, int x, int y)
 /* go to left or right in visual order */
 static void html_move_left_right_visual(EditState *s, int dir, int move_mark)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     LeftRightMoveContext m1, *m = &m1;
     CSSRect cursor_pos;
     int dirc, offset, x0;
@@ -641,7 +641,7 @@ static void html_move_left_right_visual(EditState *s, int dir, int move_mark)
 
 static void html_move_bol_eol(EditState *s, int dir)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     LeftRightMoveContext m1, *m = &m1;
     CSSRect cursor_pos;
     int dirc, offset, x0, xtarget;
@@ -705,7 +705,7 @@ typedef struct {
 
 static int mouse_goto_func(void *opaque, CSSBox *box, int x, int y)
 {
-    MouseGotoContext *m = opaque;
+    MouseGotoContext *m = (MouseGotoContext*)opaque;
     int dy, dx;
 
     x += m->dx;
@@ -732,7 +732,7 @@ static int mouse_goto_func(void *opaque, CSSBox *box, int x, int y)
 
 static void html_mouse_goto(EditState *s, int x, int y)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     MouseGotoContext m1, *m = &m1;
     int offset;
 
@@ -762,8 +762,8 @@ static void html_callback(EditBuffer *b,
                           int offset,
                           int size)
 {
-    EditState *s = opaque;
-    HTMLState *hs = s->mode_data;
+    EditState *s = (EditState*)opaque;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     hs->up_to_date = 0;
 }
     
@@ -785,7 +785,7 @@ int gxml_mode_init(EditState *s,
                    ModeSavedData *saved_data,
                    int flags, const char *default_stylesheet)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
 
     if (!saved_data) {
         memset(s, 0, SAVED_DATA_SIZE);
@@ -816,7 +816,7 @@ static int html_mode_init(EditState *s, ModeSavedData *saved_data)
 
 static void html_mode_close(EditState *s)
 {
-    HTMLState *hs = s->mode_data;
+    HTMLState *hs = (HTMLState*)s->mode_data;
     eb_free_callback(s->b, html_callback, s);
 
     s->busy = 0;

@@ -20,8 +20,6 @@
 
 QECharset *first_charset = NULL;
 
-static QECharset charset_7bit;
-
 /* specific tables */
 static unsigned short table_idem[256];
 static unsigned short table_utf8[256];
@@ -310,7 +308,7 @@ void charset_decode_init(CharsetDecodeState *s, QECharset *charset)
     
     s->table = NULL; /* fail safe */
     if (charset->table_alloc) {
-        table = malloc(256 * sizeof(unsigned short));
+        table = (unsigned short*)malloc(256 * sizeof(unsigned short));
         if (!table) {
             charset = &charset_8859_1;
         } else {

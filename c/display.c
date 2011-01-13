@@ -221,7 +221,7 @@ QEBitmap *bmp_alloc(QEditScreen *s, int width, int height, int flags)
 
     if (!s->dpy.dpy_bmp_alloc)
         return NULL;
-    b = malloc(sizeof(QEBitmap));
+    b = (QEBitmap*)malloc(sizeof(QEBitmap));
     if (!b)
         return NULL;
     b->width = width;

@@ -322,7 +322,7 @@ CSSIdent css_new_ident(const char *str)
     /* put ident in table */
     if (table_ident_nb == table_ident_allocated) {
         n = table_ident_allocated + CSS_IDENT_INCR;
-        pp = realloc(table_ident, n * sizeof(CSSIdentEntry *));
+        pp = (CSSIdentEntry**)realloc(table_ident, n * sizeof(CSSIdentEntry *));
         if (!pp) {
             free(p);
             return CSS_ID_NIL;
@@ -365,7 +365,7 @@ static void set_counter(CSSContext *s, CSSIdent counter_id, int value)
             p->value = value;
         }
     }
-    p = malloc(sizeof(CSSCounterValue));
+    p = (CSSCounterValue*)malloc(sizeof(CSSCounterValue));
     if (!p)
         return;
     p->counter_id = counter_id;
@@ -686,9 +686,9 @@ static void eval_counter_update(CSSContext *s, CSSProperty *p)
             value++;
         }
         if (p->property == CSS_counter_reset)
-            set_counter(s, counter_id, n);
+            set_counter(s, (CSSIdent)counter_id, n);
         else
-            incr_counter(s, counter_id, n);
+            incr_counter(s, (CSSIdent)counter_id, n);
     }
 }
 
@@ -840,7 +840,7 @@ static CSSState *allocate_props(CSSContext *s, CSSState *props)
         pp = &p->hash_next;
     }
     /* add new props */
-    p = malloc(sizeof(CSSState));
+    p = (CSSState*)malloc(sizeof(CSSState));
     if (!p)
         return NULL;
     s->nb_props++;
@@ -1150,7 +1150,7 @@ static void css_box_split(CSSBox *box1, int offset)
     }
 #endif    
 
-    box2 = malloc(sizeof(CSSBox));
+    box2 = (CSSBox*)malloc(sizeof(CSSBox));
     if (!box2) 
         return;
     memset(box2, 0, sizeof(CSSBox));
@@ -1856,7 +1856,7 @@ static void css_flush_line(InlineLayout *s,
 
     if (level_max > 0) {
         /* needed to do bidir reordering */
-        box_table = malloc(sizeof(InlineBox) * nb_boxes);
+        box_table = (InlineBox*)malloc(sizeof(InlineBox) * nb_boxes);
         if (box_table) {
             /* record the logical order of the boxes */
             memcpy(box_table, line_boxes, nb_boxes * sizeof(InlineBox));
@@ -2445,7 +2445,7 @@ static void allocate_column(TableLayout *s)
     s->nb_cols++;
     if (s->nb_cols > s->nb_cols_allocated) {
         s->nb_cols_allocated = s->nb_cols_allocated + COL_INCR;
-        s->cols = realloc(s->cols, s->nb_cols_allocated * sizeof(ColStruct));
+        s->cols = (ColStruct*)realloc(s->cols, s->nb_cols_allocated * sizeof(ColStruct));
         memset(s->cols + s->nb_cols_allocated - COL_INCR, 0, 
                COL_INCR * sizeof(ColStruct));
     }
@@ -3152,7 +3152,7 @@ static int css_add_float(InlineLayout *s, CSSBox *box)
 {
     FloatBlock *b, **pb;
 
-    b = malloc(sizeof(FloatBlock));
+    b = (FloatBlock*)malloc(sizeof(FloatBlock));
     if (!b)
         return 0;
     b->box = box;
@@ -4106,7 +4106,7 @@ typedef struct CSSCursorState {
 static int css_get_cursor_func(void *opaque, 
                                CSSBox *box, int x0, int y0)
 {
-    CSSCursorState *s = opaque;
+    CSSCursorState *s = (CSSCursorState*)opaque;
     unsigned int line_buf[MAX_LINE_SIZE];
     unsigned int glyphs[MAX_LINE_SIZE];
     int offsets[MAX_LINE_SIZE+1];
@@ -4358,9 +4358,7 @@ void css_dump(CSSBox *box)
  */
 CSSBox *css_new_box(CSSIdent tag, CSSAttribute *attrs)
 {
-    CSSBox *box;
-
-    box = malloc(sizeof(CSSBox));
+    CSSBox *box = (CSSBox*)malloc(sizeof(CSSBox));
     if (!box)
         return NULL;
     memset(box, 0, sizeof(CSSBox));
@@ -4476,9 +4474,7 @@ void css_make_child_box(CSSBox *box)
 CSSContext *css_new_document(QEditScreen *screen,
                              EditBuffer *b)
 {
-    CSSContext *s;
-
-    s = malloc(sizeof(CSSContext));
+    CSSContext *s = (CSSContext*)malloc(sizeof(CSSContext));
     if (!s)
         return NULL;
     memset(s, 0, sizeof(CSSContext));

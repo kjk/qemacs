@@ -38,7 +38,7 @@ static void build_bufed_list(EditState *s)
     int last_index = list_get_pos(s);
     int i;
 
-    hs = s->mode_data;
+    hs = (BufedState*)s->mode_data;
 
     free_strings(&hs->items);
     for (b = qs->first_buffer; b != NULL; b = b->next) {
@@ -63,7 +63,7 @@ static void build_bufed_list(EditState *s)
 
 static EditBuffer *bufed_get_buffer(EditState *s)
 {
-    BufedState *bs = s->mode_data;
+    BufedState *bs = (BufedState*)s->mode_data;
     int index;
 
     index = list_get_pos(s);
@@ -75,7 +75,7 @@ static EditBuffer *bufed_get_buffer(EditState *s)
 
 static void bufed_select(EditState *s, int temp)
 {
-    BufedState *bs = s->mode_data;
+    BufedState *bs = (BufedState*)s->mode_data;
     StringItem *item;
     EditBuffer *b;
     EditState *e;
@@ -138,13 +138,13 @@ void string_selection_iterate(StringArray *cs,
 
 static void bufed_kill_item(void *opaque, StringItem *item)
 {
-    EditState *s = opaque;
+    EditState *s = (EditState*)opaque;
     do_kill_buffer(s, item->str);
 }
 
 static void bufed_kill_buffer(EditState *s)
 {
-    BufedState *hs = s->mode_data;
+    BufedState *hs = (BufedState*)s->mode_data;
     string_selection_iterate(&hs->items, list_get_pos(s),
                              bufed_kill_item, s);
     build_bufed_list(s);
@@ -177,7 +177,7 @@ static void do_list_buffers(EditState *s)
     if (e1)
         b0 = e1->b;
 
-    bs = e->mode_data;
+    bs = (BufedState*)e->mode_data;
 
     /* if active buffer is found, go directly on it */
     for (i = 0; i < bs->items.nb_items; i++) {
@@ -217,7 +217,7 @@ static void bufed_toggle_read_only(EditState *s)
 
 static void bufed_refresh(EditState *s, int toggle)
 {
-    BufedState *bs = s->mode_data;
+    BufedState *bs = (BufedState*)s->mode_data;
 
     if (toggle)
         bs->flags ^= BUFED_ALL_VISIBLE;
@@ -245,7 +245,7 @@ static int bufed_mode_init(EditState *s, ModeSavedData *saved_data)
 
 static void bufed_mode_close(EditState *s)
 {
-    BufedState *bs = s->mode_data;
+    BufedState *bs = (BufedState*)s->mode_data;
 
     free_strings(&bs->items);
 

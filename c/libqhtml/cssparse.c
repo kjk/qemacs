@@ -281,7 +281,7 @@ CSSProperty *css_parse_properties(CSSParseState *b, const char *props_str)
                 !(type & (CSS_TYPE_FOUR|CSS_TYPE_ARGS)))
                 break;
             if (nb_args >= 4 && 
-                (!type & CSS_TYPE_ARGS))
+                (!(type & CSS_TYPE_ARGS)))
                 break;
             if (nb_args >= MAX_ARGS)
                 break;
@@ -768,7 +768,7 @@ CSSStyleSheetEntry *add_style_entry(CSSStyleSheet *s,
     CSSStyleSheetEntry *e, **pp;
     
     /* add the style sheet entry */
-    e = malloc(sizeof(CSSStyleSheetEntry));
+    e = (CSSStyleSheetEntry*)malloc(sizeof(CSSStyleSheetEntry));
     if (!e)
         return NULL;
     memset(e, 0, sizeof(*e));

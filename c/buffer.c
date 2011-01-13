@@ -74,7 +74,7 @@ static void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr,
     lp = p;
     p1 = p + size;
     for (;;) {
-        p = memchr(p, '\n', p1 - p);
+        p = (u8*)memchr(p, '\n', p1 - p);
         if (!p)
             break;
         p++;
@@ -481,14 +481,14 @@ static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size1, int do_write)
 /* We must have: 0 <= offset < b->total_size */
 int eb_read(EditBuffer *b, int offset, void *buf, int size)
 {
-    return eb_rw(b, offset, buf, size, 0);
+    return eb_rw(b, offset, (u8*)buf, size, 0);
 }
 
 /* Note: eb_write can be used to insert after the end of the buffer */
 void eb_write(EditBuffer *b, int offset, void *buf_arg, int size)
 {
     int len, left;
-    u8 *buf = buf_arg;
+    u8 *buf = (u8*)buf_arg;
     
     len = eb_rw(b, offset, buf, size, 1);
     left = size - len;
@@ -518,7 +518,7 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
 void eb_insert(EditBuffer *b, int offset, const void *buf, int size)
 {
     eb_addlog(b, LOGOP_INSERT, offset, size);
-    pages_insert_lowlevel(&b->pages, offset, buf, size);
+    pages_insert_lowlevel(&b->pages, offset, (const u8*)buf, size);
 }
 
 /* Append 'size' bytes from 'buf' at the end of 'b' */
@@ -573,7 +573,7 @@ EditBuffer *eb_new(const char *name, int flags)
     QEmacsState *qs = &qe_state;
     EditBuffer *b;
 
-    b = malloc(sizeof(EditBuffer));
+    b = (EditBuffer*)malloc(sizeof(EditBuffer));
     if (!b)
         return NULL;
     memset(b, 0, sizeof(EditBuffer));
@@ -697,7 +697,7 @@ int eb_add_callback(EditBuffer *b, EditBufferCallback cb,
 {
     EditBufferCallbackList *l;
 
-    l = malloc(sizeof(EditBufferCallbackList));
+    l = (EditBufferCallbackList*)malloc(sizeof(EditBufferCallbackList));
     if (!l)
         return -1;
     l->callback = cb;
@@ -729,7 +729,7 @@ void eb_offset_callback(EditBuffer *b,
                         int offset,
                         int size)
 {
-    int *offset_ptr = opaque;
+    int *offset_ptr = (int*)opaque;
 
     switch (op) {
     case LOGOP_INSERT:
@@ -1007,7 +1007,7 @@ int eb_goto_pos(EditBuffer *b, int line1, int col1)
             /* seek to the correct line */
             while (line < line1) {
                 col = 0;
-                q = memchr(q, '\n', q_end - q);
+                q = (u8*)memchr(q, '\n', q_end - q);
                 q++;
                 line++;
             }
@@ -1318,7 +1318,7 @@ int mmap_buffer(EditBuffer *b, const char *filename)
     }
 #endif
     n = (file_size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
-    p = malloc(n * sizeof(Page));
+    p = (Page*)malloc(n * sizeof(Page));
     if (!p) {
 #ifdef WIN32
         UnmapViewOfFile((void*)file_ptr);
