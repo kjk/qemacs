@@ -180,7 +180,7 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInst,
    char *   command_line;
    int      result;
 
-   command_line = malloc(strlen(lpszCmdLine) + sizeof(PROG_NAME) + 1);
+   command_line = (char*)malloc(strlen(lpszCmdLine) + sizeof(PROG_NAME) + 1);
    if (!command_line)
        return 1;
    strcpy(command_line, PROG_NAME " ");
@@ -392,7 +392,7 @@ static int win_init(QEditScreen *s, int w, int h)
     win_ctx.bmp_dx = 0;
     win_ctx.bmp_dy = 0;
 
-    font_prev = SelectObject(hdc, win_ctx.font);
+    font_prev = (HFONT)SelectObject(hdc, win_ctx.font);
     GetTextMetrics(hdc, &tm);
     SelectObject(hdc, font_prev);
     ReleaseDC(desktop_hwnd, hdc);
@@ -476,7 +476,7 @@ static void push_event(QEEvent *ev)
         }
     }
 
-    e = malloc(sizeof(QEEventQ));
+    e = (QEEventQ*) malloc(sizeof(QEEventQ));
     if (!e)
         return;
     e->ev = *ev;
@@ -889,8 +889,8 @@ static void win_text_metrics(QEditScreen *s, QEFont *font,
                              const unsigned int *str, int len)
 {
     int     i;
-    WORD    bufStatic[BUF_STATIC_LEN];
-    WORD *  buf = bufStatic;
+    WCHAR   bufStatic[BUF_STATIC_LEN];
+    WCHAR *  buf = bufStatic;
     HDC     hdc = win_ctx.hdc;
     SIZE    txtSize;
     BOOL    fOk;
@@ -900,7 +900,7 @@ static void win_text_metrics(QEditScreen *s, QEFont *font,
     metrics->width = 0;
 
     if (len > BUF_STATIC_LEN) {
-        buf = (WORD*)malloc(len * sizeof(WORD));
+        buf = (WCHAR*)malloc(len * sizeof(WCHAR));
         if (!buf)
             return;
     }
@@ -927,12 +927,12 @@ static void win_draw_text(QEditScreen *s, QEFont *font,
                           QEColor color)
 {
     int     i;
-    WORD    bufStatic[BUF_STATIC_LEN];
-    WORD *  buf = bufStatic;
+    WCHAR    bufStatic[BUF_STATIC_LEN];
+    WCHAR *  buf = bufStatic;
     COLORREF col;
 
     if (len > BUF_STATIC_LEN) {
-        buf = (WORD*)malloc(len * sizeof(WORD));
+        buf = (WCHAR*)malloc(len * sizeof(WCHAR));
         if (!buf)
             return;
     }

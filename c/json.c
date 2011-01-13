@@ -44,7 +44,7 @@
 
 #define hexdigit(x) (((x) <= '9') ? (x) - '0' : ((x) & 7) + 9)
 
-int serialize_generic(json_object *this, strbuf *buf);
+int serialize_generic(json_object *me, strbuf *buf);
 
 #if !HAVE_STRNDUP
 char* strndup(const char* str, size_t n)
@@ -70,82 +70,82 @@ char* strndup(const char* str, size_t n)
 struct array_list*
 array_list_new(array_list_free_fn *free_fn)
 {
-    struct array_list *this;
+    struct array_list *me;
 
-    this = calloc(1, sizeof(struct array_list));
-    if (!this) 
+    me = (array_list*)calloc(1, sizeof(struct array_list));
+    if (!me) 
         return NULL;
-    this->size = ARRAY_LIST_DEFAULT_SIZE;
-    this->length = 0;
-    this->free_fn = free_fn;
-    this->array = calloc(sizeof(void*), this->size);
-    if (!this->array) {
-        free(this);
+    me->size = ARRAY_LIST_DEFAULT_SIZE;
+    me->length = 0;
+    me->free_fn = free_fn;
+    me->array = (void**)calloc(sizeof(void*), me->size);
+    if (!me->array) {
+        free(me);
         return NULL;
     }
-    return this;
+    return me;
 }
 
 void
-array_list_free(struct array_list *this)
+array_list_free(struct array_list *me)
 {
     int i;
-    for (i = 0; i < this->length; i++)
+    for (i = 0; i < me->length; i++)
     {
-        if (this->array[i]) 
-            this->free_fn(this->array[i]);
+        if (me->array[i]) 
+            me->free_fn(me->array[i]);
     }
-    free(this->array);
-    free(this);
+    free(me->array);
+    free(me);
 }
 
 void*
-array_list_get_idx(struct array_list *this, int i)
+array_list_get_idx(struct array_list *me, int i)
 {
-    if(i >= this->length) 
+    if(i >= me->length) 
         return NULL;
-    return this->array[i];
+    return me->array[i];
 }
 
-static int array_list_expand_internal(struct array_list *this, int max)
+static int array_list_expand_internal(struct array_list *me, int max)
 {
-    void *t;
+    void **t;
     int new_size;
 
-    if (max < this->size) 
+    if (max < me->size) 
         return 0;
     new_size = max;
-    if (this->size << 1 > max)
-        new_size = this->size << 1;
-    t = realloc(this->array, new_size*sizeof(void*));
+    if (me->size << 1 > max)
+        new_size = me->size << 1;
+    t = (void**)realloc(me->array, new_size*sizeof(void*));
     if (!t) 
         return -1;
-    this->array = t;
-    memset(this->array + this->size, 0, (new_size-this->size)*sizeof(void*));
-    this->size = new_size;
+    me->array = t;
+    memset(me->array + me->size, 0, (new_size-me->size)*sizeof(void*));
+    me->size = new_size;
     return 0;
 }
 
-int array_list_put_idx(struct array_list *this, int idx, void *data)
+int array_list_put_idx(struct array_list *me, int idx, void *data)
 {
-    if (array_list_expand_internal(this, idx)) 
+    if (array_list_expand_internal(me, idx)) 
         return -1;
-    if (this->array[idx]) 
-        this->free_fn(this->array[idx]);
-    this->array[idx] = data;
-    if (this->length <= idx) 
-        this->length = idx + 1;
+    if (me->array[idx]) 
+        me->free_fn(me->array[idx]);
+    me->array[idx] = data;
+    if (me->length <= idx) 
+        me->length = idx + 1;
     return 0;
 }
 
-int array_list_add(struct array_list *this, void *data)
+int array_list_add(struct array_list *me, void *data)
 {
-  return array_list_put_idx(this, this->length, data);
+  return array_list_put_idx(me, me->length, data);
 }
 
-int array_list_length(struct array_list *this)
+int array_list_length(struct array_list *me)
 {
-  return this->length;
+  return me->length;
 }
 
 /** LINKHASH.C */
@@ -178,7 +178,7 @@ int lh_ptr_equal(void *k1, void *k2)
 unsigned long lh_char_hash(void *k)
 {
     unsigned int h = 0;
-    const char* data = k;
+    const char* data = (const char*)k;
 
     while( *data ) 
         h = h*129 + (unsigned int)(*data++) + LH_PRIME;
@@ -199,13 +199,13 @@ lh_table* lh_table_new(int size, char *name,
     int i;
     lh_table *t;
 
-    t = calloc(1, sizeof(lh_table));
+    t = (lh_table*)calloc(1, sizeof(lh_table));
     if (!t) 
         return NULL;
     t->count = 0;
     t->size = size;
     t->name = name;
-    t->table = calloc(size, sizeof(lh_entry));
+    t->table = (lh_entry*)calloc(size, sizeof(lh_entry));
     if (!t->table) 
     {
         free(t);
@@ -380,7 +380,7 @@ int lh_table_delete(lh_table *t, void *k)
 #define NUMBER_CHARS "0123456789.+-e"
 #define HEX_CHARS "0123456789abcdef"
 
-static void json_generic_delete(json_object* this);
+static void json_generic_delete(json_object* me);
 static json_object* json_new(enum json_type o_type);
 
 /* string escaping */
@@ -453,51 +453,51 @@ static int json_escape_str(strbuf *pb, char *str)
     return ok;
 }
 
-json_object* json_addref(json_object *this)
+json_object* json_addref(json_object *me)
 {
-  if (this)
-    this->_ref_count++;
-  return this;
+  if (me)
+    me->_ref_count++;
+  return me;
 }
 
-static void json_generic_delete(json_object* this)
+static void json_generic_delete(json_object* me)
 {
-    strbuf_free(this->_pb);
-    free(this);
+    strbuf_free(me->_pb);
+    free(me);
 }
 
-static void json_delete_object(json_object *this)
+static void json_delete_object(json_object *me)
 {
-    if (!this)
+    if (!me)
         return;
 
-    switch (this->o_type)
+    switch (me->o_type)
     {
         case json_type_object:
-            lh_table_free(this->o.c_object);
+            lh_table_free(me->o.c_object);
             break;
         case json_type_string:
-            free(this->o.c_string);
+            free(me->o.c_string);
             break;
         case json_type_array:
-            array_list_free(this->o.c_array);
+            array_list_free(me->o.c_array);
             break;
         default:
             break;
     }
-    json_generic_delete(this);
+    json_generic_delete(me);
 }
 
 /* Unref and delete if refcount drops to zero.
    Return 1 (TRUE) if was deleted, 0 (FALSE) otherwise */
-int json_unref(json_object *this)
+int json_unref(json_object *me)
 {
-    if (!this)
+    if (!me)
         return 0;
-    --this->_ref_count;
-    if (0 == this->_ref_count)
+    --me->_ref_count;
+    if (0 == me->_ref_count)
     {
-        json_delete_object(this);
+        json_delete_object(me);
         return 1;
     }
     return 0;
@@ -505,32 +505,32 @@ int json_unref(json_object *this)
 
 static json_object* json_new(enum json_type o_type)
 {
-    json_object *this = calloc(sizeof(json_object), 1);
-    if (!this) 
+    json_object *me = (json_object*)calloc(sizeof(json_object), 1);
+    if (!me) 
         return NULL;
-    this->o_type = o_type;
-    this->_ref_count = 1;
-    return this;
+    me->o_type = o_type;
+    me->_ref_count = 1;
+    return me;
 }
 
-enum json_type json_get_type(json_object *this)
+enum json_type json_get_type(json_object *me)
 {
-    return this->o_type;
+    return me->o_type;
 }
 
-char* json_serialize(json_object *this)
+char* json_serialize(json_object *me)
 {
-    if (!this->_pb) {
-        this->_pb = strbuf_new();
-        if(!this->_pb) 
+    if (!me->_pb) {
+        me->_pb = strbuf_new();
+        if(!me->_pb) 
             return NULL;
     } else {
-        strbuf_reset(this->_pb);
+        strbuf_reset(me->_pb);
     }
 
-    if (!serialize_generic(this, this->_pb)) 
+    if (!serialize_generic(me, me->_pb)) 
         return NULL;
-    return this->_pb->data;
+    return me->_pb->data;
 }
 
 static void json_lh_entry_free(lh_entry *ent)
@@ -539,36 +539,36 @@ static void json_lh_entry_free(lh_entry *ent)
     json_unref((json_object*)ent->val);
 }
 
-static void json_object_delete(json_object* this)
+static void json_object_delete(json_object* me)
 {
-    json_generic_delete(this);
+    json_generic_delete(me);
 }
 
 #define DEF_HASH_ENTIRES 16
 
 json_object* json_new_object()
 {
-    json_object *this = json_new(json_type_object);
-    if (!this) 
+    json_object *me = json_new(json_type_object);
+    if (!me) 
         return NULL;
-    this->o.c_object = lh_kchar_table_new(DEF_HASH_ENTIRES, NULL, &json_lh_entry_free);
-    if (!this->o.c_object)
+    me->o.c_object = lh_kchar_table_new(DEF_HASH_ENTIRES, NULL, &json_lh_entry_free);
+    if (!me->o.c_object)
     {
-        free(this);
+        free(me);
         return NULL;
     }
-    return this;
+    return me;
 }
 
-lh_table* json_get_object(json_object *this)
+lh_table* json_get_object(json_object *me)
 {
-    if (!this) 
+    if (!me) 
         return NULL;
 
-    switch (this->o_type) 
+    switch (me->o_type) 
     {
         case json_type_object:
-            return this->o.c_object;
+            return me->o.c_object;
         default:
             return NULL;
     }
@@ -576,51 +576,51 @@ lh_table* json_get_object(json_object *this)
 
 /* add an 'key'/'val' to 'this' hash.
    Return 0 (FALSE) if failed, 1 (TRUE) otherwise */
-int json_object_add(json_object* this, char *key, json_object *val)
+int json_object_add(json_object* me, char *key, json_object *val)
 {
     char *  key_dup = strdup(key);
     if (!key_dup)
         return 0;
 
-    lh_table_delete(this->o.c_object, key);
-    return lh_table_insert(this->o.c_object, key_dup, val);
+    lh_table_delete(me->o.c_object, key);
+    return lh_table_insert(me->o.c_object, key_dup, val);
 }
 
-json_object* json_object_get(json_object* this, char *key)
+json_object* json_object_get(json_object* me, char *key)
 {
-    return (json_object*) lh_table_lookup(this->o.c_object, key);
+    return (json_object*) lh_table_lookup(me->o.c_object, key);
 }
 
-void json_object_del(json_object* this, char *key)
+void json_object_del(json_object* me, char *key)
 {
-    lh_table_delete(this->o.c_object, key);
+    lh_table_delete(me->o.c_object, key);
 }
 
 /* json_boolean */
 json_object* json_new_boolean(int b)
 {
-    json_object *this = json_new(json_type_boolean);
-    if (!this) 
+    json_object *me = json_new(json_type_boolean);
+    if (!me) 
         return NULL;
-    this->o.c_boolean = b;
-    return this;
+    me->o.c_boolean = b;
+    return me;
 }
 
-int json_get_boolean(json_object *this)
+int json_get_boolean(json_object *me)
 {
-    if (!this) 
+    if (!me) 
         return 0;
 
-    switch (this->o_type) 
+    switch (me->o_type) 
     {
         case json_type_boolean:
-            return this->o.c_boolean;
+            return me->o.c_boolean;
         case json_type_int:
-            return (this->o.c_int != 0);
+            return (me->o.c_int != 0);
         case json_type_double:
-            return (this->o.c_double != 0);
+            return (me->o.c_double != 0);
         case json_type_string:
-            if (strlen(this->o.c_string)) 
+            if (strlen(me->o.c_string)) 
                 return 1;
         default:
             return 1;
@@ -631,30 +631,30 @@ int json_get_boolean(json_object *this)
 
 json_object* json_new_int(int i)
 {
-  json_object *this = json_new(json_type_int);
-  if (!this) 
+  json_object *me = json_new(json_type_int);
+  if (!me) 
       return NULL;
-  this->o.c_int = i;
-  return this;
+  me->o.c_int = i;
+  return me;
 }
 
-int json_get_int(json_object *this)
+int json_get_int(json_object *me)
 {
     int cint;
 
-    if (!this) 
+    if (!me) 
         return 0;
 
-    switch(this->o_type) 
+    switch(me->o_type) 
     {
         case json_type_int:
-            return this->o.c_int;
+            return me->o.c_int;
         case json_type_double:
-            return (int)this->o.c_double;
+            return (int)me->o.c_double;
         case json_type_boolean:
-            return this->o.c_boolean;
+            return me->o.c_boolean;
         case json_type_string:
-            if (sscanf(this->o.c_string, "%d", &cint) == 1) 
+            if (sscanf(me->o.c_string, "%d", &cint) == 1) 
                 return cint;
         default:
             return 0;
@@ -664,29 +664,29 @@ int json_get_int(json_object *this)
 /* json_double */
 json_object* json_new_double(double d)
 {
-    json_object *this = json_new(json_type_double);
-    if (!this) 
+    json_object *me = json_new(json_type_double);
+    if (!me) 
         return NULL;
-    this->o.c_double = d;
-    return this;
+    me->o.c_double = d;
+    return me;
 }
 
-double json_get_double(json_object *this)
+double json_get_double(json_object *me)
 {
     double cdouble;
 
-    if (!this) 
+    if (!me) 
         return 0.0;
-    switch(this->o_type) 
+    switch(me->o_type) 
     {
         case json_type_double:
-            return this->o.c_double;
+            return me->o.c_double;
         case json_type_int:
-            return this->o.c_int;
+            return me->o.c_int;
         case json_type_boolean:
-            return this->o.c_boolean;
+            return me->o.c_boolean;
         case json_type_string:
-            if (sscanf(this->o.c_string, "%lf", &cdouble) == 1) 
+            if (sscanf(me->o.c_string, "%lf", &cdouble) == 1) 
                 return cdouble;
         default:
         return 0.0;
@@ -695,10 +695,10 @@ double json_get_double(json_object *this)
 
 
 /* json_string */
-static void json_string_delete(json_object* this)
+static void json_string_delete(json_object* me)
 {
-    free(this->o.c_string);
-    json_generic_delete(this);
+    free(me->o.c_string);
+    json_generic_delete(me);
 }
 
 json_object* json_new_string(char *s)
@@ -711,28 +711,28 @@ json_object* json_new_string(char *s)
 
 json_object* json_new_string_len(char *s, int len)
 {
-    json_object *this = json_new(json_type_string);
-    if (!this) 
+    json_object *me = json_new(json_type_string);
+    if (!me) 
         return NULL;
-    this->o.c_string = strndup(s, len);
-    if (!this->o.c_string)
+    me->o.c_string = strndup(s, len);
+    if (!me->o.c_string)
     {
-        free(this);
+        free(me);
         return NULL;
     }
-    return this;
+    return me;
 }
 
-char* json_get_string(json_object *this)
+char* json_get_string(json_object *me)
 {
-    if (!this) 
+    if (!me) 
         return NULL;
-    switch(this->o_type) 
+    switch(me->o_type) 
     {
         case json_type_string:
-            return this->o.c_string;
+            return me->o.c_string;
         default:
-            return json_serialize(this);
+            return json_serialize(me);
     }
 }
 
@@ -742,76 +742,76 @@ static void json_array_entry_free(void *data)
     json_unref((json_object*)data);
 }
 
-static void json_array_delete(json_object* this)
+static void json_array_delete(json_object* me)
 {
-    array_list_free(this->o.c_array);
-    json_generic_delete(this);
+    array_list_free(me->o.c_array);
+    json_generic_delete(me);
 }
 
 json_object* json_new_array()
 {
-    json_object *this = json_new(json_type_array);
-    if (!this) 
+    json_object *me = json_new(json_type_array);
+    if (!me) 
         return NULL;
-    this->o.c_array = array_list_new(&json_array_entry_free);
-    return this;
+    me->o.c_array = array_list_new(&json_array_entry_free);
+    return me;
 }
 
-struct array_list* json_get_array(json_object *this)
+struct array_list* json_get_array(json_object *me)
 {
-    if (!this) 
+    if (!me) 
         return NULL;
 
-    switch (this->o_type) 
+    switch (me->o_type) 
     {
         case json_type_array:
-            return this->o.c_array;
+            return me->o.c_array;
         default:
             return NULL;
     }
 }
 
-int json_array_length(json_object *this)
+int json_array_length(json_object *me)
 {
-    return array_list_length(this->o.c_array);
+    return array_list_length(me->o.c_array);
 }
 
-int json_array_add(json_object *this,json_object *val)
+int json_array_add(json_object *me,json_object *val)
 {
-    return array_list_add(this->o.c_array, val);
+    return array_list_add(me->o.c_array, val);
 }
 
-int json_array_put_idx(json_object *this, int idx, json_object *val)
+int json_array_put_idx(json_object *me, int idx, json_object *val)
 {
-    return array_list_put_idx(this->o.c_array, idx, val);
+    return array_list_put_idx(me->o.c_array, idx, val);
 }
 
-json_object* json_array_get_idx(json_object *this, int idx)
+json_object* json_array_get_idx(json_object *me, int idx)
 {
-    return (json_object*)array_list_get_idx(this->o.c_array, idx);
+    return (json_object*)array_list_get_idx(me->o.c_array, idx);
 }
 
 /* serialization support */
 
-static int serialize_array(json_object* this, strbuf *pb)
+static int serialize_array(json_object* me, strbuf *pb)
 {
     int i;
     json_object *val;
 
     strbuf_appendf(pb, "[");
-    for (i=0; i < json_array_length(this); i++) {
+    for (i=0; i < json_array_length(me); i++) {
         if (0 != i)
             strbuf_appendf(pb, ", "); 
         else
             strbuf_appendf(pb, " ");
 
-        val = json_array_get_idx(this, i);
+        val = json_array_get_idx(me, i);
         serialize_generic(val, pb);
     }
     return strbuf_appendf(pb, " ]");
 }
 
-int serialize_object(json_object* this, strbuf *pb)
+int serialize_object(json_object* me, strbuf *pb)
 {
     int         ok = 1;
     lh_entry *  entry;
@@ -819,7 +819,7 @@ int serialize_object(json_object* this, strbuf *pb)
 
     ok = strbuf_appendf(pb, "{");
 
-    head = json_get_object(this)->head;
+    head = json_get_object(me)->head;
     entry = head;
     while (entry)
     {
@@ -829,11 +829,11 @@ int serialize_object(json_object* this, strbuf *pb)
         if (ok)
             ok = strbuf_appendf(pb, " \"");
         if (ok)
-            ok = json_escape_str(pb, entry->key);
+            ok = json_escape_str(pb, (char*)entry->key);
         if (ok)
             ok = strbuf_appendf(pb, "\": ");
         if (ok)
-            ok = serialize_generic(entry->val, pb);
+            ok = serialize_generic((json_object*)entry->val, pb);
 
         if (!ok)
             return 0;
@@ -843,46 +843,46 @@ int serialize_object(json_object* this, strbuf *pb)
     return strbuf_appendf(pb, " }");
 }
 
-int serialize_generic(json_object *this, strbuf *buf)
+int serialize_generic(json_object *me, strbuf *buf)
 {
     int ok = 1;
 
-    if (!this)
+    if (!me)
         return strbuf_appendf(buf, "null");
 
-    switch (this->o_type)
+    switch (me->o_type)
     {
         case json_type_boolean:
-            if (this->o.c_boolean) 
+            if (me->o.c_boolean) 
                 ok = strbuf_appendf(buf, "true");
             else
                 ok = strbuf_appendf(buf, "false");
             break;
 
         case json_type_int:
-            ok = strbuf_appendf(buf, "%d", this->o.c_int);
+            ok = strbuf_appendf(buf, "%d", me->o.c_int);
             break;
 
         case json_type_double:
-            ok = strbuf_appendf(buf, "%lf", this->o.c_double);
+            ok = strbuf_appendf(buf, "%lf", me->o.c_double);
             break;
 
         case json_type_string:
-            ok = strbuf_reserve(buf, 2 + 4 + strlen(this->o.c_string));
+            ok = strbuf_reserve(buf, 2 + 4 + strlen(me->o.c_string));
             if (ok)
                 ok = strbuf_append(buf, "\"", 1);
             if (ok)
-                ok = json_escape_str(buf, this->o.c_string);
+                ok = json_escape_str(buf, me->o.c_string);
             if (ok)
                 ok = strbuf_append(buf, "\"", 1);
             break;
 
         case json_type_array:
-            ok = serialize_array(this, buf);
+            ok = serialize_array(me, buf);
             break;
 
         case json_type_object:
-            ok = serialize_object(this, buf);
+            ok = serialize_object(me, buf);
             break;
     }
     return ok;
@@ -1004,7 +1004,7 @@ struct json_tokener
     strbuf *    pb;
 };
 
-static json_object* json_tokener_do_parse(struct json_tokener *this)
+static json_object* json_tokener_do_parse(struct json_tokener *me)
 {
   enum json_tokener_state state, saved_state;
   enum json_tokener_error err = json_tokener_success;
@@ -1018,15 +1018,15 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
   saved_state = json_tokener_state_start;
 
   do {
-    c = this->source[this->pos];
+    c = me->source[me->pos];
     switch(state) {
 
     case json_tokener_state_eatws:
       if(isspace(c)) {
-        this->pos++;
+        me->pos++;
       } else if(c == '/') {
         state = json_tokener_state_comment_start;
-        start_offset = this->pos++;
+        start_offset = me->pos++;
       } else {
         state = saved_state;
       }
@@ -1038,32 +1038,32 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
         state = json_tokener_state_eatws;
         saved_state = json_tokener_state_object;
         current = json_new_object();
-        this->pos++;
+        me->pos++;
         break;
       case '[':
         state = json_tokener_state_eatws;
         saved_state = json_tokener_state_array;
         current = json_new_array();
-        this->pos++;
+        me->pos++;
         break;
       case 'N':
       case 'n':
         state = json_tokener_state_null;
-        start_offset = this->pos++;
+        start_offset = me->pos++;
         break;
       case '"':
       case '\'':
         quote_char = c;
-        strbuf_reset(this->pb);
+        strbuf_reset(me->pb);
         state = json_tokener_state_string;
-        start_offset = ++this->pos;
+        start_offset = ++me->pos;
         break;
       case 'T':
       case 't':
       case 'F':
       case 'f':
         state = json_tokener_state_boolean;
-        start_offset = this->pos++;
+        start_offset = me->pos++;
         break;
           case '0':
       case '1':
@@ -1078,7 +1078,7 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
       case '-':
         deemed_double = 0;
         state = json_tokener_state_number;
-        start_offset = this->pos++;
+        start_offset = me->pos++;
         break;
       default:
         err = json_tokener_error_parse_unexpected;
@@ -1090,14 +1090,14 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
       goto out;
 
     case json_tokener_state_null:
-      if (strncasecmp("null", this->source + start_offset, this->pos - start_offset))
+      if (strncasecmp("null", me->source + start_offset, me->pos - start_offset))
             return NULL;
-      if(this->pos - start_offset == 4) {
+      if(me->pos - start_offset == 4) {
         current = NULL;
         saved_state = json_tokener_state_finish;
         state = json_tokener_state_eatws;
       } else {
-        this->pos++;
+        me->pos++;
       }
       break;
 
@@ -1110,19 +1110,19 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
         err = json_tokener_error_parse_comment;
         goto out;
       }
-      this->pos++;
+      me->pos++;
       break;
 
     case json_tokener_state_comment:
       if(c == '*') state = json_tokener_state_comment_end;
-      this->pos++;
+      me->pos++;
       break;
 
     case json_tokener_state_comment_eol:
       if(c == '\n') {
         state = json_tokener_state_eatws;
       }
-      this->pos++;
+      me->pos++;
       break;
 
     case json_tokener_state_comment_end:
@@ -1131,49 +1131,49 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
       } else {
         state = json_tokener_state_comment;
       }
-      this->pos++;
+      me->pos++;
       break;
 
     case json_tokener_state_string:
       if(c == quote_char) {
-        strbuf_append(this->pb, this->source + start_offset,
-                           this->pos - start_offset);
-        current = json_new_string(this->pb->data);
+        strbuf_append(me->pb, me->source + start_offset,
+                           me->pos - start_offset);
+        current = json_new_string(me->pb->data);
         saved_state = json_tokener_state_finish;
         state = json_tokener_state_eatws;
       } else if(c == '\\') {
         saved_state = json_tokener_state_string;
         state = json_tokener_state_string_escape;
       }
-      this->pos++;
+      me->pos++;
       break;
 
     case json_tokener_state_string_escape:
       switch(c) {
       case '"':
       case '\\':
-        strbuf_append(this->pb, this->source + start_offset,
-                           this->pos - start_offset - 1);
-        start_offset = this->pos++;
+        strbuf_append(me->pb, me->source + start_offset,
+                           me->pos - start_offset - 1);
+        start_offset = me->pos++;
         state = saved_state;
         break;
       case 'b':
       case 'n':
       case 'r':
       case 't':
-        strbuf_append(this->pb, this->source + start_offset,
-                           this->pos - start_offset - 1);
-        if(c == 'b') strbuf_append(this->pb, "\b", 1);
-        else if(c == 'n') strbuf_append(this->pb, "\n", 1);
-        else if(c == 'r') strbuf_append(this->pb, "\r", 1);
-        else if(c == 't') strbuf_append(this->pb, "\t", 1);
-        start_offset = ++this->pos;
+        strbuf_append(me->pb, me->source + start_offset,
+                           me->pos - start_offset - 1);
+        if(c == 'b') strbuf_append(me->pb, "\b", 1);
+        else if(c == 'n') strbuf_append(me->pb, "\n", 1);
+        else if(c == 'r') strbuf_append(me->pb, "\r", 1);
+        else if(c == 't') strbuf_append(me->pb, "\t", 1);
+        start_offset = ++me->pos;
         state = saved_state;
         break;
       case 'u':
-        strbuf_append(this->pb, this->source + start_offset,
-                           this->pos - start_offset - 1);
-        start_offset = ++this->pos;
+        strbuf_append(me->pb, me->source + start_offset,
+                           me->pos - start_offset - 1);
+        start_offset = ++me->pos;
         state = json_tokener_state_escape_unicode;
         break;
       default:
@@ -1184,28 +1184,28 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
 
     case json_tokener_state_escape_unicode:
       if(strchr(HEX_CHARS, c)) {
-        this->pos++;
-        if(this->pos - start_offset == 4) {
+        me->pos++;
+        if(me->pos - start_offset == 4) {
           unsigned char utf_out[3];
           unsigned int ucs_char =
-            (hexdigit(*(this->source + start_offset)) << 12) +
-            (hexdigit(*(this->source + start_offset + 1)) << 8) +
-            (hexdigit(*(this->source + start_offset + 2)) << 4) +
-            hexdigit(*(this->source + start_offset + 3));
+            (hexdigit(*(me->source + start_offset)) << 12) +
+            (hexdigit(*(me->source + start_offset + 1)) << 8) +
+            (hexdigit(*(me->source + start_offset + 2)) << 4) +
+            hexdigit(*(me->source + start_offset + 3));
           if (ucs_char < 0x80) {
             utf_out[0] = ucs_char;
-            strbuf_append(this->pb, (char*)utf_out, 1);
+            strbuf_append(me->pb, (char*)utf_out, 1);
           } else if (ucs_char < 0x800) {
             utf_out[0] = 0xc0 | (ucs_char >> 6);
             utf_out[1] = 0x80 | (ucs_char & 0x3f);
-            strbuf_append(this->pb, (char*)utf_out, 2);
+            strbuf_append(me->pb, (char*)utf_out, 2);
           } else {
             utf_out[0] = 0xe0 | (ucs_char >> 12);
             utf_out[1] = 0x80 | ((ucs_char >> 6) & 0x3f);
             utf_out[2] = 0x80 | (ucs_char & 0x3f);
-            strbuf_append(this->pb, (char*)utf_out, 3);
+            strbuf_append(me->pb, (char*)utf_out, 3);
           }
-          start_offset = this->pos;
+          start_offset = me->pos;
           state = saved_state;
         }
       } else {
@@ -1215,23 +1215,23 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
       break;
 
     case json_tokener_state_boolean:
-      if(strncasecmp("true", this->source + start_offset,
-                 this->pos - start_offset) == 0) {
-        if(this->pos - start_offset == 4) {
+      if(strncasecmp("true", me->source + start_offset,
+                 me->pos - start_offset) == 0) {
+        if(me->pos - start_offset == 4) {
           current = json_new_boolean(1);
           saved_state = json_tokener_state_finish;
           state = json_tokener_state_eatws;
         } else {
-          this->pos++;
+          me->pos++;
         }
-      } else if(strncasecmp("false", this->source + start_offset,
-                        this->pos - start_offset) == 0) {
-        if(this->pos - start_offset == 5) {
+      } else if(strncasecmp("false", me->source + start_offset,
+                        me->pos - start_offset) == 0) {
+        if(me->pos - start_offset == 5) {
           current = json_new_boolean(0);
           saved_state = json_tokener_state_finish;
           state = json_tokener_state_eatws;
         } else {
-          this->pos++;
+          me->pos++;
         }
       } else {
         err = json_tokener_error_parse_boolean;
@@ -1243,8 +1243,8 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
       if(!c || !strchr(NUMBER_CHARS, c)) {
         int numi;
         double numd;
-        char *tmp = strndup(this->source + start_offset,
-                            this->pos - start_offset);
+        char *tmp = strndup(me->source + start_offset,
+                            me->pos - start_offset);
         if(!deemed_double && sscanf(tmp, "%d", &numi) == 1) {
           current = json_new_int(numi);
         } else if(deemed_double && sscanf(tmp, "%lf", &numd) == 1) {
@@ -1259,17 +1259,17 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
         state = json_tokener_state_eatws;
       } else {
         if(c == '.' || c == 'e') deemed_double = 1;
-        this->pos++;
+        me->pos++;
       }
       break;
 
     case json_tokener_state_array:
       if(c == ']') {
-        this->pos++;
+        me->pos++;
         saved_state = json_tokener_state_finish;
         state = json_tokener_state_eatws;
       } else {
-        obj = json_tokener_do_parse(this);
+        obj = json_tokener_do_parse(me);
         if(!obj) {
           err = json_tokener_error_parse_unexpected;
           goto out;
@@ -1282,11 +1282,11 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
 
     case json_tokener_state_array_sep:
       if(c == ']') {
-        this->pos++;
+        me->pos++;
         saved_state = json_tokener_state_finish;
         state = json_tokener_state_eatws;
       } else if(c == ',') {
-        this->pos++;
+        me->pos++;
         saved_state = json_tokener_state_array;
         state = json_tokener_state_eatws;
       } else {
@@ -1297,19 +1297,19 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
 
     case json_tokener_state_object:
       state = json_tokener_state_object_field_start;
-      start_offset = this->pos;
+      start_offset = me->pos;
       break;
 
     case json_tokener_state_object_field_start:
       if(c == '}') {
-        this->pos++;
+        me->pos++;
         saved_state = json_tokener_state_finish;
         state = json_tokener_state_eatws;
       } else if (c == '"' || c == '\'') {
         quote_char = c;
-        strbuf_reset(this->pb);
+        strbuf_reset(me->pb);
         state = json_tokener_state_object_field;
-        start_offset = ++this->pos;
+        start_offset = ++me->pos;
       } else {
         err = json_tokener_error_parse_object;
         goto out;
@@ -1318,21 +1318,21 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
 
     case json_tokener_state_object_field:
       if(c == quote_char) {
-        strbuf_append(this->pb, this->source + start_offset,
-                           this->pos - start_offset);
-        obj_field_name = strdup(this->pb->data);
+        strbuf_append(me->pb, me->source + start_offset,
+                           me->pos - start_offset);
+        obj_field_name = strdup(me->pb->data);
         saved_state = json_tokener_state_object_field_end;
         state = json_tokener_state_eatws;
       } else if(c == '\\') {
         saved_state = json_tokener_state_object_field;
         state = json_tokener_state_string_escape;
       }
-      this->pos++;
+      me->pos++;
       break;
 
     case json_tokener_state_object_field_end:
       if(c == ':') {
-        this->pos++;
+        me->pos++;
         saved_state = json_tokener_state_object_value;
         state = json_tokener_state_eatws;
       } else {
@@ -1341,7 +1341,7 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
       break;
 
     case json_tokener_state_object_value:
-      obj = json_tokener_do_parse(this);
+      obj = json_tokener_do_parse(me);
       if(!obj) {
         err = json_tokener_error_parse_unexpected;
         goto out;
@@ -1359,11 +1359,11 @@ static json_object* json_tokener_do_parse(struct json_tokener *this)
 
     case json_tokener_state_object_sep:
       if(c == '}') {
-        this->pos++;
+        me->pos++;
         saved_state = json_tokener_state_finish;
         state = json_tokener_state_eatws;
       } else if(c == ',') {
-        this->pos++;
+        me->pos++;
         saved_state = json_tokener_state_object;
         state = json_tokener_state_eatws;
       } else {

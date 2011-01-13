@@ -807,7 +807,7 @@ int css_define_color(const char *name, const char *value)
 
     /* Make room: reallocate table in chunks of 8 entries */
     if ((nb_custom_colors & 7) == 0) {
-        def = malloc((nb_css_colors + nb_custom_colors + 8) *
+        def = (ColorDef*)malloc((nb_css_colors + nb_custom_colors + 8) *
                      sizeof(ColorDef));
         if (!def)
             return -1;
@@ -972,7 +972,7 @@ StringItem *set_string(StringArray *cs, int index, const char *str)
     if (index >= cs->nb_items)
         return NULL;
 
-    v = malloc(sizeof(StringItem) + strlen(str));
+    v = (StringItem*)malloc(sizeof(StringItem) + strlen(str));
     if (!v)
         return NULL;
     v->selected = 0;
@@ -991,7 +991,7 @@ StringItem *add_string(StringArray *cs, const char *str)
 
     if (cs->nb_items >= cs->nb_allocated) {
         n = cs->nb_allocated + 32;
-        tmp = realloc(cs->items, n * sizeof(StringItem *));
+        tmp = (StringItem**)realloc(cs->items, n * sizeof(StringItem *));
         if (!tmp)
             return NULL;
         cs->items = tmp;
@@ -1045,7 +1045,7 @@ void umemmove(unsigned int *dest, unsigned int *src, int len)
 int qmemcat(QString *q, const unsigned char *data1, int len1)
 {
     int new_len, len, alloc_size;
-    unsigned char *data;
+    u8 *data;
 
     data = q->data;
     len = q->len;
@@ -1061,7 +1061,7 @@ int qmemcat(QString *q, const unsigned char *data1, int len1)
         alloc_size |= (alloc_size >> 8);
         alloc_size |= (alloc_size >> 16);
         /* allocate one more byte for end of string marker */
-        data = realloc(data, alloc_size + 1);
+        data = (u8*)realloc(data, alloc_size + 1);
         if (!data)
                 return -1;
         q->data = data;

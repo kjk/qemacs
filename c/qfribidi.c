@@ -181,7 +181,7 @@ FriBidiCharType fribidi_get_type(FriBidiChar ch)
     if (m > 0)
         m--;
  found:
-    return property_val[m];
+    return (FriBidiCharType)property_val[m];
 }
 
 /* version for test with ASCII chars */
@@ -365,8 +365,9 @@ void fribidi_analyse_string(TypeLink * type_rl_list,
                             FriBidiCharType * pbase_dir,
                             int *pmax_level)
 {
-    int base_level, base_dir;
-    int max_level, level, override;
+    int base_level;
+    int max_level, level;
+    FriBidiCharType base_dir, override;
     int last_strong;
     TypeLink *pp;
     unsigned char stack_level[STACK_SIZE];
@@ -465,7 +466,7 @@ void fribidi_analyse_string(TypeLink * type_rl_list,
                     stack_index--;
                     /* pop level & override */
                     level = stack_level[stack_index];
-                    override = stack_override[stack_index];
+                    override = (FriBidiCharType)stack_override[stack_index];
                 }
             }
             RL_TYPE(pp) = FRIBIDI_TYPE_NULL;
@@ -482,7 +483,7 @@ void fribidi_analyse_string(TypeLink * type_rl_list,
     /* 4. Resolving weak types */
     last_strong = base_dir;
     for (pp = type_rl_list + 1; pp->type != FRIBIDI_TYPE_EOT; pp++) {
-        int prev_type = RL_TYPE(pp-1);
+        FriBidiCharType prev_type = RL_TYPE(pp-1);
         int this_type = RL_TYPE(pp);
         int next_type = RL_TYPE(pp+1);
 

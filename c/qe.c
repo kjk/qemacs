@@ -137,7 +137,7 @@ void qe_register_mode(ModeDef *m)
         char buf[64], *name;
         int size;
 
-        table = malloc(sizeof(CmdDef) * 2);
+        table = (CmdDef*)malloc(sizeof(CmdDef) * 2);
         memset(table, 0, sizeof(CmdDef) * 2);
         table->key = KEY_NONE;
         table->alt_key = KEY_NONE;
@@ -149,7 +149,7 @@ void qe_register_mode(ModeDef *m)
         size = strlen(buf) + 1;
         buf[size++] = 'S'; /* constant string parameter */
         buf[size++] = '\0';
-        name = malloc(size);
+        name = (char*)malloc(size);
         memcpy(name, buf, size);
         table->name = name;
         table->action.func = (void*)do_cmd_set_mode;
@@ -194,7 +194,7 @@ static int qe_register_binding1(unsigned int *keys, int nb_keys,
     KeyDef **lp, *p;
 
     /* add key */
-    p = malloc(sizeof(KeyDef) + (nb_keys - 1) * sizeof(unsigned int));
+    p = (KeyDef*)malloc(sizeof(KeyDef) + (nb_keys - 1) * sizeof(unsigned int));
     if (!p)
         return -1;
     p->nb_keys = nb_keys;

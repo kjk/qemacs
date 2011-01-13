@@ -122,19 +122,19 @@ extern struct array_list*
 array_list_new(array_list_free_fn *free_fn);
 
 extern void
-array_list_free(struct array_list *this);
+array_list_free(struct array_list *me);
 
 extern void*
-array_list_get_idx(struct array_list *this, int i);
+array_list_get_idx(struct array_list *me, int i);
 
 extern int
-array_list_put_idx(struct array_list *this, int i, void *data);
+array_list_put_idx(struct array_list *me, int i, void *data);
 
 extern int
-array_list_add(struct array_list *this, void *data);
+array_list_add(struct array_list *me, void *data);
 
 extern int
-array_list_length(struct array_list *this);
+array_list_length(struct array_list *me);
 
 /** JSON_OBJECT.H */
 
@@ -162,26 +162,26 @@ typedef struct json_object
     } o;
 } json_object;
 
-json_object* json_addref(json_object *this);
-int json_unref(json_object *this);
+json_object* json_addref(json_object *me);
+int json_unref(json_object *me);
 
-extern enum json_type json_get_type(json_object *this);
+extern enum json_type json_get_type(json_object *me);
 
 json_object* json_new_object();
 
-lh_table* json_get_object(json_object *this);
+lh_table* json_get_object(json_object *me);
 
-int json_object_add(json_object* this, char *key, json_object *val);
-json_object* json_object_get(json_object* this, char *key);
-void json_object_del(json_object* this, char *key);
+int json_object_add(json_object* me, char *key, json_object *val);
+json_object* json_object_get(json_object* me, char *key);
+void json_object_del(json_object* me, char *key);
 
 json_object* json_new_array();
 
-struct array_list* json_get_array(json_object *this);
+struct array_list* json_get_array(json_object *me);
 
-int json_array_length(json_object *this);
+int json_array_length(json_object *me);
 
-int json_array_add(json_object *this, json_object *val);
+int json_array_add(json_object *me, json_object *val);
 
 /** Insert or replace an element at a specified index in an array (a json_object of type json_type_array)
  *
@@ -198,14 +198,14 @@ int json_array_add(json_object *this, json_object *val);
  * @param idx the index to insert the element at
  * @param val the json_object to be added
  */
-int json_array_put_idx(json_object *this, int idx, json_object *val);
+int json_array_put_idx(json_object *me, int idx, json_object *val);
 
 /** Get the element at specificed index of the array (a json_object of type json_type_array)
  * @param this the json_object instance
  * @param idx the index to get the element at
  * @returns the json_object at the specified index (or NULL)
  */
-json_object* json_array_get_idx(json_object *this, int idx);
+json_object* json_array_get_idx(json_object *me, int idx);
 
 /* boolean type methods */
 
@@ -222,7 +222,7 @@ json_object* json_new_boolean(int b);
  * @param this the json_object instance
  * @returns a boolean
  */
-int json_get_boolean(json_object *this);
+int json_get_boolean(json_object *me);
 
 /* int type methods */
 
@@ -237,7 +237,7 @@ json_object* json_new_int(int i);
  * @param this the json_object instance
  * @returns an int
  */
-int json_get_int(json_object *this);
+int json_get_int(json_object *me);
 
 /* double type methods */
 
@@ -256,7 +256,7 @@ json_object* json_new_double(double d);
  * @param this the json_object instance
  * @returns an double
  */
-double json_get_double(json_object *this);
+double json_get_double(json_object *me);
 
 
 /* string type methods */
@@ -283,9 +283,9 @@ json_object* json_new_string_len(char *s, int len);
  * @param this the json_object instance
  * @returns a string
  */
-char* json_get_string(json_object *this);
+char* json_get_string(json_object *me);
 
-char*        json_serialize(json_object *this);
+char*        json_serialize(json_object *me);
 json_object* json_deserialize(char *s);
 json_object* json_from_file(char *filename);
 int          json_to_file(char *filename, json_object *obj);

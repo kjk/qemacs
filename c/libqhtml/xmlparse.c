@@ -151,13 +151,13 @@ static void strbuf_addch1(StringBuffer *b, int ch)
 {
     const char *p;
     int size1;
-    unsigned char *ptr;
+    u8 *ptr;
 
     size1 = b->allocated_size + STRING_BUF_SIZE;
     ptr = b->buf;
     if (b->buf == b->buf1)
         ptr = NULL;
-    ptr = realloc(ptr, size1);
+    ptr = (u8*)realloc(ptr, size1);
     if (ptr) {
         if (b->buf == b->buf1)
             memcpy(ptr, b->buf1, STRING_BUF_SIZE);
@@ -266,7 +266,7 @@ XMLState *xml_begin(CSSStyleSheet *style_sheet, int flags,
 {
     XMLState *s;
     
-    s = malloc(sizeof(XMLState));
+    s = (XMLState*)malloc(sizeof(XMLState));
     if (!s)
         return NULL;
     memset(s, 0, sizeof(*s));
@@ -293,7 +293,7 @@ XMLState *xml_begin(CSSStyleSheet *style_sheet, int flags,
 static CSSAttribute *box_new_attr(CSSIdent attr_id, const char *value)
 {
     CSSAttribute *attr;
-    attr = malloc(sizeof(CSSAttribute) + strlen(value));
+    attr = (CSSAttribute*)malloc(sizeof(CSSAttribute) + strlen(value));
     if (!attr)
         return NULL;
     attr->attr = attr_id;
