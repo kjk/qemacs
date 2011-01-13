@@ -433,6 +433,26 @@ int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)
     return pos;
 }
 
+int pages_goto_char(Pages *pages, QECharset *charset, int pos)
+{
+    Page *p, *p_end;
+    int offset = 0;
+    p = pages->page_table;
+    p_end = pages->page_table + pages->nb_pages;
+    while (p < p_end) {
+        p->CalcChars(charset);
+        if (pos < p->nb_chars) {
+            offset += goto_char(p->data, pos, charset);
+            break;
+        } else {
+            pos -= p->nb_chars;
+            offset += p->size;
+            p++;
+        }
+    }
+    return offset;
+}
+
 int pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset)
 {
     Page *p, *p_end;
@@ -467,24 +487,46 @@ the_end:
     return line;
 }
 
-int pages_goto_char(Pages *pages, QECharset *charset, int pos)
+int pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, int col1)
 {
     Page *p, *p_end;
-    int offset = 0;
+    int line2, col2, offset1;
+    u8 *q, *q_end;
+
+    int line = 0, col = 0, offset = 0;
     p = pages->page_table;
     p_end = pages->page_table + pages->nb_pages;
     while (p < p_end) {
-        p->CalcChars(charset);
-        if (pos < p->nb_chars) {
-            offset += goto_char(p->data, pos, charset);
-            break;
-        } else {
-            pos -= p->nb_chars;
-            offset += p->size;
-            p++;
+        p->CalcPos(charset_state);
+        line2 = line + p->nb_lines;
+        if (p->nb_lines)
+            col2 = 0;
+        col2 = col + p->col;
+        if (line2 > line1 || (line2 == line1 && col2 >= col1)) {
+            /* compute offset */
+            q = p->data;
+            q_end = p->data + p->size;
+            /* seek to the correct line */
+            while (line < line1) {
+                col = 0;
+                q = (u8*)memchr(q, '\n', q_end - q);
+                q++;
+                line++;
+            }
+            /* test if we want to go after the end of the line */
+            offset += q - p->data;
+            while (col < col1 && pages_nextc(pages, charset_state, offset, &offset1) != '\n') {
+                col++;
+                offset = offset1;
+            }
+            return offset;
         }
+        line = line2;
+        col = col2;
+        offset += p->size;
+        p++;
     }
-    return offset;
+    return pages->total_size;
 }
 
 int pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int *next_offset)

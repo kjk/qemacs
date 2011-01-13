@@ -500,48 +500,7 @@ int eb_prevc(EditBuffer *b, int offset, int *prev_offset)
 
 int eb_goto_pos(EditBuffer *b, int line1, int col1)
 {
-    Page *p, *p_end;
-    int line2, col2, line, col, offset, offset1;
-    u8 *q, *q_end;
-    Pages *pages;
-
-    line = 0;
-    col = 0;
-    offset = 0;
-    pages = &b->pages;
-    p = pages->page_table;
-    p_end = pages->page_table + pages->nb_pages;
-    while (p < p_end) {
-        p->CalcPos(&b->charset_state);
-        line2 = line + p->nb_lines;
-        if (p->nb_lines)
-            col2 = 0;
-        col2 = col + p->col;
-        if (line2 > line1 || (line2 == line1 && col2 >= col1)) {
-            /* compute offset */
-            q = p->data;
-            q_end = p->data + p->size;
-            /* seek to the correct line */
-            while (line < line1) {
-                col = 0;
-                q = (u8*)memchr(q, '\n', q_end - q);
-                q++;
-                line++;
-            }
-            /* test if we want to go after the end of the line */
-            offset += q - p->data;
-            while (col < col1 && eb_nextc(b, offset, &offset1) != '\n') {
-                col++;
-                offset = offset1;
-            }
-            return offset;
-        }
-        line = line2;
-        col = col2;
-        offset += p->size;
-        p++;
-    }
-    return eb_total_size(b);
+    return pages_goto_pos(&b->pages, &b->charset_state, line1, col1);
 }
 
 int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
