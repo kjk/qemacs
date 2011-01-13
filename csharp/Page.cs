@@ -7,10 +7,10 @@ public class Page
 {
     public int          size { get { return data.Length; } } 
     public byte[]       data;
-    public bool         read_only; /* the page is read only */
-    public bool         valid_pos; /* set if the nb_lines / col fields are up to date */
-    public bool         valid_char; /* nb_chars is valid */
-    public bool         valid_colors; /* color state is valid */
+    public bool         read_only;      /* the page is read only */
+    public bool         valid_pos;      /* set if the nb_lines / col fields are up to date */
+    public bool         valid_char;     /* nb_chars is valid */
+    public bool         valid_colors;   /* color state is valid */
 
     public void InvalidateAttributes()
     {
@@ -237,18 +237,22 @@ public class Pages
 
     void Insert(int page_index, byte[] buf, int size)
     {
-        if (page_index < nb_pages)
+        // TODO: add the end of buf at the beginning of page at page_index
+        // if that page can be extended
+
+        int pagesToAdd = (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
+        if (0 == pagesToAdd)
+            return;
+        int offset = 0;
+        while (size > 0)
         {
-            Page p = page_table[page_index];
-            int len = Math.Min(MAX_PAGE_SIZE - p.size, size);
-            if (len > 0)
-            {
-                p.Update();
-                // TODO: insert data
-            }
-
+            int len = Math.Min(size, MAX_PAGE_SIZE);
+            byte[] data = new byte[len];
+            Buffer.BlockCopy(buf, offset, data, 0, len);
+            page_table.Insert(page_index++, new Page() { data = data });
+            offset += len;
+            size -= len;
         }
-
     }
 }
 

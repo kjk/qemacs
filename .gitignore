@@ -10,3 +10,9 @@ html2png
 obj-dbg/
 obj-rel/
 cnew/bin/
+csharp/bin/
+csharp/obj/
+*.suo
+*.ncb
+*.user
+*Debug/

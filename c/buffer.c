@@ -281,23 +281,24 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
     
     /* now add new pages if necessary */
     n = (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
-    if (n > 0) {
-        pages->nb_pages += n;
-        pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
-        p = pages->page_table + page_index;
-        memmove(p + n, p, sizeof(Page) * (pages->nb_pages - n - page_index));
-        while (size > 0) {
-            len = size;
-            if (len > MAX_PAGE_SIZE)
-                len = MAX_PAGE_SIZE;
-            p->size = len;
-            p->data = (u8*)malloc(len);
-            clear_attrs(p);
-            memcpy(p->data, buf, len);
-            buf += len;
-            size -= len;
-            p++;
-        }
+    if (0 == n)
+        return;
+
+    pages->nb_pages += n;
+    pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
+    p = pages->page_table + page_index;
+    memmove(p + n, p, sizeof(Page) * (pages->nb_pages - n - page_index));
+    while (size > 0) {
+        len = size;
+        if (len > MAX_PAGE_SIZE)
+            len = MAX_PAGE_SIZE;
+        p->size = len;
+        p->data = (u8*)malloc(len);
+        clear_attrs(p);
+        memcpy(p->data, buf, len);
+        buf += len;
+        size -= len;
+        p++;
     }
 }
 
