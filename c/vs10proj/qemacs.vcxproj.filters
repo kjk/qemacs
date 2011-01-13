@@ -161,6 +161,9 @@
     <ClInclude Include="..\qestyles-old.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\pages.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\todo.txt" />

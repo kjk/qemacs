@@ -157,6 +157,7 @@
     <ClInclude Include="..\libqhtml\htmlent.h" />
     <ClInclude Include="..\json-config.h" />
     <ClInclude Include="..\json.h" />
+    <ClInclude Include="..\pages.h" />
     <ClInclude Include="..\qe.h" />
     <ClInclude Include="..\qeconfig.h" />
     <ClInclude Include="..\qestyles-old.h" />

@@ -8,16 +8,6 @@
 
 #include "pages.h"
 
-typedef struct Pages {
-    Page *page_table;
-    int nb_pages;
-    /* page cache */
-    Page *cur_page;
-    int cur_offset;
-
-    int total_size; /* sum of Page.size in page_table */
-} Pages;
-
 #define DIR_LTR 0
 #define DIR_RTL 1
 

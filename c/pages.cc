@@ -95,3 +95,283 @@ void page_calc_pos(Page *p, CharsetDecodeState *charset_state)
     }
 }
 
+static int pages_offset_in_cache(Pages *pages, int offset)
+{
+    return (NULL != pages->cur_page) && 
+           (offset >= pages->cur_offset) && 
+           (offset < (pages->cur_offset + pages->cur_page->size));
+}
+
+/* find a page at a given offset */
+static Page *pages_find_page(Pages *pages, int *offset_ptr)
+{
+    Page *p;
+
+    int offset = *offset_ptr;
+    if (pages_offset_in_cache(pages, offset)) {
+        *offset_ptr -= pages->cur_offset;
+        return pages->cur_page;
+    }
+
+    p = pages->page_table;
+    while (offset >= p->size) {
+        offset -= p->size;
+        p++;
+    }
+    pages->cur_page = p;
+    pages->cur_offset = *offset_ptr - offset;
+    *offset_ptr = offset;
+    return p;
+}
+
+void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
+{
+    int len;
+
+    Page *p = pages_find_page(pages, &offset);
+    while (size > 0) {
+        len = p->size - offset;
+        if (len > size)
+            len = size;
+        if (do_write) {
+            update_page(p);
+            memcpy(p->data + offset, buf, len);
+        } else {
+            memcpy(buf, p->data + offset, len);
+        }
+        buf += len;
+        size -= len;
+        offset += len;
+        if (offset >= p->size) {
+            p++;
+            offset = 0;
+        }
+    }
+}
+
+void pages_delete(Pages *pages, int offset, int size)
+{
+    int n, len;
+    Page *del_start, *p;
+
+    pages->total_size -= size;
+    p = pages_find_page(pages, &offset);
+    n = 0;
+    del_start = NULL;
+    while (size > 0) {
+        len = p->size - offset;
+        if (len > size)
+            len = size;
+        if (len == p->size) {
+            if (!del_start)
+                del_start = p;
+            /* we cannot free if read only */
+            if (!p->read_only)
+                free(p->data);
+            p++;
+            offset = 0;
+            n++;
+        } else {
+            update_page(p);
+            memmove(p->data + offset, p->data + offset + len, 
+                    p->size - offset - len);
+            p->size -= len;
+            p->data = (u8*)realloc(p->data, p->size);
+            offset += len;
+            if (offset >= p->size) {
+                p++;
+                offset = 0;
+            }
+        }
+        size -= len;
+    }
+
+    /* now delete the requested pages */
+    if (n > 0) {
+        pages->nb_pages -= n;
+        memmove(del_start, del_start + n, 
+                (pages->page_table + pages->nb_pages - del_start) * sizeof(Page));
+        pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
+    }
+
+    /* the page cache is no longer valid */
+    pages->cur_page = NULL;
+}
+
+/* internal function for insertion : 'buf' of size 'size' at the
+   beginning of the page at page_index */
+static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
+{
+    int len, n;
+    Page *p;
+
+    if (page_index < pages->nb_pages) {
+        p = pages->page_table + page_index;
+        len = MAX_PAGE_SIZE - p->size;
+        if (len > size)
+            len = size;
+        if (len > 0) {
+            update_page(p);
+            p->data = (u8*)realloc(p->data, p->size + len);
+            memmove(p->data + len, p->data, p->size);
+            memcpy(p->data, buf + size - len, len);
+            size -= len;
+            p->size += len;
+        }
+    }
+    
+    /* now add new pages if necessary */
+    n = (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
+    if (0 == n)
+        return;
+
+    pages->nb_pages += n;
+    pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
+    p = pages->page_table + page_index;
+    memmove(p + n, p, sizeof(Page) * (pages->nb_pages - n - page_index));
+    while (size > 0) {
+        len = size;
+        if (len > MAX_PAGE_SIZE)
+            len = MAX_PAGE_SIZE;
+        p->size = len;
+        p->data = (u8*)malloc(len);
+        clear_attrs(p);
+        memcpy(p->data, buf, len);
+        buf += len;
+        size -= len;
+        p++;
+    }
+}
+
+/* We must have : 0 <= offset <= pages->total_size */
+void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
+{
+    int len, len_out, page_index;
+    Page *p = pages->page_table;
+    pages->total_size += size;
+    if (offset > 0) {
+        offset--;
+        p = pages_find_page(pages, &offset);
+        offset++;
+
+        /* compute what we can insert in current page */
+        len = MAX_PAGE_SIZE - offset;
+        if (len > size)
+            len = size;
+        /* number of bytes to put in next pages */
+        len_out = p->size + len - MAX_PAGE_SIZE;
+        page_index = p - pages->page_table;
+        if (len_out > 0)
+            pages_insert(pages, page_index + 1, 
+                       p->data + p->size - len_out, len_out);
+        else
+            len_out = 0;
+        /* now we can insert in current page */
+        if (len > 0) {
+            p = pages->page_table + page_index;
+            update_page(p);
+            p->size += len - len_out;
+            p->data = (u8*)realloc(p->data, p->size);
+            memmove(p->data + offset + len, p->data + offset, p->size - (offset + len));
+            memcpy(p->data + offset, buf, len);
+            buf += len;
+            size -= len;
+        }
+    } else {
+        page_index = -1;
+    }
+    /* insert the remaining data in the next pages */
+    if (size > 0)
+        pages_insert(pages, page_index + 1, buf, size);
+
+    /* the page cache is no longer valid */
+    pages->cur_page = NULL;
+}
+
+void pages_insert_from(Pages *dest_pages, int dest_offset,
+                  Pages *src_pages, int src_offset, int size)
+{
+    Page *p, *p_start, *q;
+    int size_start, len, n, page_index;
+
+    /* insert the data from the first page if it is not completely selected */
+    p = pages_find_page(src_pages, &src_offset);
+    if (src_offset > 0) {
+        len = p->size - src_offset;
+        if (len > size)
+            len = size;
+        pages_insert_lowlevel(dest_pages, dest_offset, p->data + src_offset, len);
+        dest_offset += len;
+        size -= len;
+        p++;
+    }
+
+    if (size == 0)
+        return;
+
+    /* cut the page at dest offset if needed */
+    if (dest_offset < dest_pages->total_size) {
+        q = pages_find_page(dest_pages, &dest_offset);
+        page_index = q - dest_pages->page_table;
+        if (dest_offset > 0) {
+            page_index++;
+            pages_insert(dest_pages, page_index, q->data + dest_offset, q->size - dest_offset);
+            /* must reload q because page_table may have been
+               realloced */
+            q = dest_pages->page_table + page_index - 1;
+            update_page(q);
+            q->data = (u8*)realloc(q->data, dest_offset);
+            q->size = dest_offset;
+        }
+    } else {
+        page_index = dest_pages->nb_pages;
+    }
+
+    dest_pages->total_size += size;
+
+    /* compute the number of complete pages to insert */
+    p_start = p;
+    size_start = size;
+    while (size > 0 && p->size <= size) {
+        size -= p->size;
+        p++;
+    }
+    n = p - p_start; /* number of pages to insert */
+    p = p_start;
+    if (n > 0) {
+        /* add the pages */
+        dest_pages->nb_pages += n;
+        dest_pages->page_table = (Page*)realloc(dest_pages->page_table, dest_pages->nb_pages * sizeof(Page));
+        q = dest_pages->page_table + page_index;
+        memmove(q + n, q, sizeof(Page) * (dest_pages->nb_pages - n - page_index));
+        p = p_start;
+        while (n > 0) {
+            len = p->size;
+            q->size = len;
+            if (p->read_only) {
+                /* simply copy the reference */
+                q->read_only = 1;
+                invalidate_attrs(p);
+                q->data = p->data;
+            } else {
+                /* allocate a new page */
+                clear_attrs(p);
+                q->data = (u8*)malloc(len);
+                memcpy(q->data, p->data, len);
+            }
+            n--;
+            p++;
+            q++;
+        }
+        page_index = q - dest_pages->page_table;
+    }
+    
+    /* insert the remaning bytes */
+    if (size > 0) {
+        pages_insert(dest_pages, page_index, p->data, size);
+    }
+
+    /* the page cache is no longer valid */
+    dest_pages->cur_page = NULL;
+}
+
