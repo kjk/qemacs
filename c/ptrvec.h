@@ -4,10 +4,10 @@
 template <typename T>
 class PtrVec {
     static const int INTERNAL_BUF_CAP = 16;
-    int len;
-    int cap;
-    T * els;
-    T * buf[INTERNAL_BUF_CAP];
+    int  len;
+    int  cap;
+    T ** els;
+    T *  buf[INTERNAL_BUF_CAP];
 
 public:
     void EnsureCap(int needed) {
@@ -21,7 +21,7 @@ public:
         if (needed > newcap)
             newcap = needed;
 
-        T * newels = (T*)malloc(newcap * sizeof(T*));
+        T ** newels = (T**)malloc(newcap * sizeof(T*));
         memcpy(newels, els, newcap * sizeof(T*));
         if (els != buf)
             free(els);
@@ -54,19 +54,30 @@ public:
         els[len++] = el;
     }
 
-    void InsertAt(int idx, T *el) {
-        EnsureCap(len + 1);
-        int tomove = len - idx;
-        if (tomove > 0) {
-            T *src = els + idx;
-            T *dst = els + idx + 1;
-            memmove(dst, src, tomove * sizeof(T*));
-        }
-        els[idx] = el;
-        ++len;
+    void Append2(T *el) {
+        MakeSpaceAt(len)[0] = el;
     }
 
-    void RemoveAt(int idx, int count=1) {
+    T** MakeSpaceAt(int idx, int count=1) {
+        EnsureCap(len + count);
+        T** res = &(els[idx]);
+        int tomove = len - idx;
+        if (tomove > 0) {
+            T* src = els + idx;
+            T* dst = els + idx + count;
+            memmove(dst, src, tomove * sizeof(T*));
+        }
+        len += count;
+        return res;
+    }
+
+    void InsertAt(int idx, T *el) {
+        T** buf = MakeSpaceAt(idx, 1);
+        buf[0] el;
+    }
+
+    T *RemoveAt(int idx, int count=1) {
+        T *res = els[idx];
         int tomove = len - idx - count;
         if (tomove > 0) {
             T *dst = els + idx;
@@ -74,6 +85,7 @@ public:
             memmove(dst, src, tomove * sizeof(T*));
         }
         len -= count;
+        return res;
     }
 
     void Push(T *el) {
