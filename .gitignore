@@ -1,3 +1,8 @@
+*Debug/
+*Release/
+*bin/
+*obj/
+*ipch/
 config.mak
 config.h
 *.o
@@ -7,15 +12,8 @@ qe_g
 fbftoqe
 fbffonts.c
 html2png
-obj-dbg/
-obj-rel/
-cnew/bin/
-csharp/bin/
-csharp/obj/
 *.suo
 *.ncb
 *.user
-*Debug/
 *.opensdf
 *.sdf
-csharp/ipch/

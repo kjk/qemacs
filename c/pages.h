@@ -1,6 +1,8 @@
 #ifndef PAGE_H__
 #define PAGE_H__
 
+#include "ptrvec.h"
+
 #define MAX_PAGE_SIZE 4096
 //#define MAX_PAGE_SIZE 16
 
