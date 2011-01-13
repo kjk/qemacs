@@ -3,16 +3,38 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp", "csharp.csproj", "{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qemacs", "..\c\vs10proj\qemacs.vcxproj", "{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Mixed Platforms = Debug|Mixed Platforms
+		Debug|Win32 = Debug|Win32
 		Debug|x86 = Debug|x86
+		Release|Mixed Platforms = Release|Mixed Platforms
+		Release|Win32 = Release|Win32
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Debug|Win32.ActiveCfg = Debug|x86
 		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Debug|x86.ActiveCfg = Debug|x86
 		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Debug|x86.Build.0 = Debug|x86
+		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Release|Mixed Platforms.Build.0 = Release|x86
+		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Release|Win32.ActiveCfg = Release|x86
 		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Release|x86.ActiveCfg = Release|x86
 		{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}.Release|x86.Build.0 = Release|x86
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Debug|Win32.Build.0 = Debug|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Debug|x86.ActiveCfg = Debug|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Release|Win32.ActiveCfg = Release|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Release|Win32.Build.0 = Release|Win32
+		{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}.Release|x86.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
