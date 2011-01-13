@@ -144,6 +144,15 @@ static Page *pages_find_page(Pages *pages, int *offset_ptr)
     return p;
 }
 
+int pages_limit_size(Pages *pages, int offset, int size)
+{
+    if ((offset + size) > pages->total_size)
+        size = pages->total_size - offset;
+    if (size <= 0)
+        return 0;
+    return size;
+}
+
 void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
 {
     int len;
@@ -167,6 +176,14 @@ void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
             offset = 0;
         }
     }
+}
+
+int pages_read(Pages *pages, int offset, void *buf, int size)
+{
+    size = pages_limit_size(pages, offset, size);
+    if (size > 0)
+        pages_rw(pages, offset, (u8*)buf, size, 0);
+    return size;
 }
 
 void pages_delete(Pages *pages, int offset, int size)
@@ -468,5 +485,34 @@ int pages_goto_char(Pages *pages, QECharset *charset, int pos)
         }
     }
     return offset;
+}
+
+int pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int *next_offset)
+{
+    u8 buf[MAX_CHAR_BYTES], *p;
+    int ch;
+
+    if (offset >= pages->total_size) {
+        offset = pages->total_size;
+        ch = '\n';
+        goto Exit;
+    }
+
+    pages_read(pages, offset, buf, 1);
+    
+    /* we use directly the charset conversion table to go faster */
+    ch = charset_state->table[buf[0]];
+    offset++;
+    if (ch == ESCAPE_CHAR) {
+        pages_read(pages, offset, buf + 1, MAX_CHAR_BYTES - 1);
+        p = buf;
+        ch = charset_state->decode_func(charset_state, (const u8 **)&p);
+        offset += (p - buf) - 1;
+    }
+
+Exit:
+    if (next_offset)
+        *next_offset = offset;
+    return ch;
 }
 

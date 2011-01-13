@@ -42,38 +42,30 @@ EditBufferDataType *first_buffer_data_type = NULL;
 /* basic access to the edit buffer */
 
 /* Read or write in the buffer. We must have 0 <= offset < b->total_size */
-static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size1, int do_write)
+static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size, int do_write)
 {
-    int size;
+    size = pages_limit_size(&b->pages, offset, size);
+    if (size > 0) {
+        if (do_write)
+            eb_addlog(b, LOGOP_WRITE, offset, size);
 
-    if ((offset + size1) > eb_total_size(b))
-        size1 = eb_total_size(b) - offset;
-
-    if (size1 <= 0)
-        return 0;
-
-    size = size1;
-    if (do_write)
-        eb_addlog(b, LOGOP_WRITE, offset, size);        
-
-    pages_rw(&b->pages, offset, buf, size, do_write);
-    return size1;
+        pages_rw(&b->pages, offset, buf, size, do_write);
+    }
+    return size;
 }
 
 /* We must have: 0 <= offset < b->total_size */
 int eb_read(EditBuffer *b, int offset, void *buf, int size)
 {
-    return eb_rw(b, offset, (u8*)buf, size, 0);
+    return pages_read(&b->pages, offset, (u8*)buf, size);
 }
 
 /* Note: eb_write can be used to insert after the end of the buffer */
-void eb_write(EditBuffer *b, int offset, void *buf_arg, int size)
+void eb_write(EditBuffer *b, int offset, void *buf1, int size)
 {
-    int len, left;
-    u8 *buf = (u8*)buf_arg;
-    
-    len = eb_rw(b, offset, buf, size, 1);
-    left = size - len;
+    u8 *buf = (u8*)buf1;
+    int len = eb_rw(b, offset, buf, size, 1);
+    int left = size - len;
     if (left > 0) {
         offset += len;
         buf += len;
@@ -496,32 +488,7 @@ void eb_set_charset(EditBuffer *b, QECharset *charset)
 /* XXX: change API to go faster */
 int eb_nextc(EditBuffer *b, int offset, int *next_offset)
 {
-    u8 buf[MAX_CHAR_BYTES], *p;
-    int ch;
-
-    if (offset >= eb_total_size(b)) {
-        offset = eb_total_size(b);
-        ch = '\n';
-        goto Exit;
-    }
-
-    eb_read(b, offset, buf, 1);
-    
-    /* we use directly the charset conversion table to go faster */
-    ch = b->charset_state.table[buf[0]];
-    offset++;
-    if (ch == ESCAPE_CHAR) {
-        eb_read(b, offset, buf + 1, MAX_CHAR_BYTES - 1);
-        p = buf;
-        ch = b->charset_state.decode_func(&b->charset_state, 
-                                          (const u8 **)&p);
-        offset += (p - buf) - 1;
-    }
-
-Exit:
-    if (next_offset)
-        *next_offset = offset;
-    return ch;
+    return pages_nextc(&b->pages, &b->charset_state, offset, next_offset);
 }
 
 /* XXX: only UTF8 charset is supported */
