@@ -16,3 +16,6 @@ csharp/obj/
 *.ncb
 *.user
 *Debug/
+*.opensdf
+*.sdf
+csharp/ipch/
