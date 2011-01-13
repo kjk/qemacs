@@ -1208,7 +1208,7 @@ static void bidir_compute_attributes_box(BidirAttrState *s, CSSBox *box)
 {
     CSSState *props = box->props;
     int c, pos;
-    int offset;
+    unsigned long offset;
     TypeLink *p;
     FriBidiCharType type, ltype;
     NextCharFunc nextc = get_nextc(box);
@@ -1352,7 +1352,7 @@ static void css_bidir_split_box(BidirSplitState *s,  CSSBox *box)
     CSSState *props = box->props;
     TypeLink *l;
     int c, pos;
-    int offset;
+    unsigned long offset;
     NextCharFunc nextc;
 
     l = s->l;
@@ -2105,7 +2105,7 @@ static int css_layout_inline_box(InlineLayout *s,
                                  int baseline)
 {
     CSSState *props = box->props;
-    int offset, offset0;
+    unsigned long offset, offset0;
     int ch, space, eob, ret, box_stack_base, i;
     QEFont *font;
     NextCharFunc nextc;
@@ -3698,7 +3698,7 @@ int box_get_text(CSSContext *s,
                  int *offsets, CSSBox *box)
 {
     /* final box with text inside */
-    int offset, offset0;
+    unsigned long offset, offset0;
     unsigned int *q;
     int c, space_collapse, last_space, space;
     NextCharFunc nextc;

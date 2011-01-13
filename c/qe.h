@@ -470,7 +470,7 @@ void log_nl(char *txt);
 #else /* QE_MODULE */
 
 #define qe_module_init(fn) \
-        int module_ ## fn (void) { return fn(); }
+        void module_ ## fn (void) { fn(); }
 
 #define qe_module_exit(fn)
 
