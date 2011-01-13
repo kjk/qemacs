@@ -600,7 +600,7 @@ int eb_goto_pos(EditBuffer *b, int line1, int col1)
     p = pages->page_table;
     p_end = pages->page_table + pages->nb_pages;
     while (p < p_end) {
-        page_calc_pos(p, &b->charset_state);
+        p->CalcPos(&b->charset_state);
         line2 = line + p->nb_lines;
         if (p->nb_lines)
             col2 = 0;
@@ -650,7 +650,7 @@ int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
             goto the_end;
         if (offset < p->size)
             break;
-        page_calc_pos(p, &b->charset_state);
+        p->CalcPos(&b->charset_state);
         line += p->nb_lines;
         if (p->nb_lines)
             col = 0;
@@ -687,7 +687,7 @@ int eb_goto_char(EditBuffer *b, int pos)
         p = pages->page_table;
         p_end = pages->page_table + pages->nb_pages;
         while (p < p_end) {
-            page_calc_chars(p, b->charset);
+            p->CalcChars(b->charset);
             if (pos < p->nb_chars) {
                 offset += goto_char(p->data, pos, b->charset);
                 break;
@@ -706,8 +706,6 @@ int eb_goto_char(EditBuffer *b, int pos)
 int eb_get_char_offset(EditBuffer *b, int offset)
 {
     int pos;
-    Page *p, *p_end;
-    Pages *pages;
 
     /* if no decoding function in charset, it means it is 8 bit only */
     if (b->charset_state.decode_func == NULL) {
@@ -715,22 +713,7 @@ int eb_get_char_offset(EditBuffer *b, int offset)
         if (pos > eb_total_size(b))
             pos = eb_total_size(b);
     } else {
-        pages = &b->pages;
-        p = pages->page_table;
-        p_end = p + pages->nb_pages;
-        pos = 0;
-        for (;;) {
-            if (p >= p_end)
-                goto the_end;
-            if (offset < p->size)
-                break;
-            page_calc_chars(p, b->charset);
-            pos += p->nb_chars;
-            offset -= p->size;
-            p++;
-        }
-        pos += get_chars(p->data, offset, b->charset);
-    the_end: ;
+        pos = pages_get_char_offset(&b->pages, offset, b->charset);
     }
     return pos;
 }
@@ -946,7 +929,7 @@ int mmap_buffer(EditBuffer *b, const char *filename)
         p->data = ptr;
         p->size = len;
         p->read_only = 1;
-        invalidate_attrs(p);
+        p->InvalidateAttrs();
         ptr += len;
         size -= len;
         p++;

@@ -1,10 +1,8 @@
 #include "qe.h"
 #include "pages.h"
 
-/************************************************************/
 /* char offset computation */
-
-int get_chars(u8 *buf, int size, QECharset *charset)
+static int get_chars(u8 *buf, int size, QECharset *charset)
 {
     int nb_chars, c;
     u8 *buf_end, *buf_ptr;
@@ -62,36 +60,36 @@ void get_pos(u8 *buf, int size, int *line_ptr, int *col_ptr, CharsetDecodeState 
 }
 
 /* prepare a page to be written */
-void update_page(Page *p)
+void Page::PrepareForUpdate()
 {
     u8 *buf;
 
     /* if the page is read only, copy it */
-    if (p->read_only) {
-        buf = (u8*)malloc(p->size);
+    if (read_only) {
+        buf = (u8*)malloc(size);
         /* XXX: should return an error */
         if (!buf)
             return;
-        memcpy(buf, p->data, p->size);
-        p->data = buf;
-        p->read_only = 0;
+        memcpy(buf, data, size);
+        data = buf;
+        read_only = 0;
     }
-    invalidate_attrs(p);
+    InvalidateAttrs();
 }
 
-void page_calc_chars(Page *p, QECharset *charset)
+void Page::CalcChars(QECharset *charset)
 {
-    if (!p->valid_char) {
-        p->valid_char = 1;
-        p->nb_chars = get_chars(p->data, p->size, charset);
+    if (!valid_char) {
+        valid_char = 1;
+        nb_chars = get_chars(data, size, charset);
     }
 }
 
-void page_calc_pos(Page *p, CharsetDecodeState *charset_state)
+void Page::CalcPos(CharsetDecodeState *charset_state)
 {
-    if (!p->valid_pos) {
-        p->valid_pos = 1;
-        get_pos(p->data, p->size, &p->nb_lines, &p->col, charset_state);
+    if (!valid_pos) {
+        valid_pos = 1;
+        get_pos(data, size, &nb_lines, &col, charset_state);
     }
 }
 
@@ -134,7 +132,7 @@ void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
         if (len > size)
             len = size;
         if (do_write) {
-            update_page(p);
+            p->PrepareForUpdate();
             memcpy(p->data + offset, buf, len);
         } else {
             memcpy(buf, p->data + offset, len);
@@ -172,7 +170,7 @@ void pages_delete(Pages *pages, int offset, int size)
             offset = 0;
             n++;
         } else {
-            update_page(p);
+            p->PrepareForUpdate();
             memmove(p->data + offset, p->data + offset + len, 
                     p->size - offset - len);
             p->size -= len;
@@ -211,7 +209,7 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
         if (len > size)
             len = size;
         if (len > 0) {
-            update_page(p);
+            p->PrepareForUpdate();
             p->data = (u8*)realloc(p->data, p->size + len);
             memmove(p->data + len, p->data, p->size);
             memcpy(p->data, buf + size - len, len);
@@ -235,7 +233,7 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
             len = MAX_PAGE_SIZE;
         p->size = len;
         p->data = (u8*)malloc(len);
-        clear_attrs(p);
+        p->ClearAttrs();
         memcpy(p->data, buf, len);
         buf += len;
         size -= len;
@@ -269,7 +267,7 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
         /* now we can insert in current page */
         if (len > 0) {
             p = pages->page_table + page_index;
-            update_page(p);
+            p->PrepareForUpdate();
             p->size += len - len_out;
             p->data = (u8*)realloc(p->data, p->size);
             memmove(p->data + offset + len, p->data + offset, p->size - (offset + len));
@@ -319,7 +317,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
             /* must reload q because page_table may have been
                realloced */
             q = dest_pages->page_table + page_index - 1;
-            update_page(q);
+            p->PrepareForUpdate();
             q->data = (u8*)realloc(q->data, dest_offset);
             q->size = dest_offset;
         }
@@ -351,11 +349,11 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
             if (p->read_only) {
                 /* simply copy the reference */
                 q->read_only = 1;
-                invalidate_attrs(p);
+                p->InvalidateAttrs();
                 q->data = p->data;
             } else {
                 /* allocate a new page */
-                clear_attrs(p);
+                p->ClearAttrs();
                 q->data = (u8*)malloc(len);
                 memcpy(q->data, p->data, len);
             }
@@ -373,5 +371,26 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
 
     /* the page cache is no longer valid */
     dest_pages->cur_page = NULL;
+}
+
+int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)
+{
+    int pos = 0;
+    Page *p, *p_end;
+    p = pages->page_table;
+    p_end = p + pages->nb_pages;
+    for (;;) {
+        if (p >= p_end)
+            return pos;
+
+        if (offset < p->size)
+            break;
+        p->CalcChars(charset);
+        pos += p->nb_chars;
+        offset -= p->size;
+        p++;
+    }
+    pos += get_chars(p->data, offset, charset);
+    return pos;
 }
 
