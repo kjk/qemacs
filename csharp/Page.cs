@@ -12,6 +12,11 @@ public class Page
     public bool         valid_char;     /* nb_chars is valid */
     public bool         valid_colors;   /* color state is valid */
 
+    public Page(byte[] data)
+    {
+        this.data = data;
+    }
+
     public void InvalidateAttributes()
     {
         valid_pos = valid_char = valid_colors = false;
@@ -112,6 +117,11 @@ public class Pages
         Debug.Assert(total_size == CalcTotalSize());
     }
 
+    int PagesForSize(int size)
+    {
+        return (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
+    }
+
     /*
     public int FindPageIdx(Page p)
     {
@@ -150,6 +160,12 @@ public class Pages
         return new Tuple<Page, int>(null, -1);
     }
 
+    public void InvalidateCache()
+    {
+        cur_page = null;
+    }
+
+    /*
     public Page PageAfter(Page p)
     {
         for (int i = 0; i < page_table.Count; i++)
@@ -158,7 +174,7 @@ public class Pages
                 return page_table[i + 1];
         }
         return null;
-    }
+    }*/
 
     public void ReadWrite(int offset, byte[] buf, int size, bool do_write)
     {
@@ -193,21 +209,15 @@ public class Pages
     {
         total_size -= size;
         var pageWithIdx = FindPage(ref offset);
-        int n = 0;
-        int del_start = -1;
-        int len;
         Page p = pageWithIdx.Item1;
         int idx = pageWithIdx.Item2;
         while (size > 0)
         {
-            len = Math.Min(p.size - offset, size);
+            int len = Math.Min(p.size - offset, size);
             if (len == p.size)
             {
-                if (-1 == del_start)
-                    del_start = idx;
-                ++idx;
+                page_table.RemoveAt(idx);
                 offset = 0;
-                n++;
             }
             else
             {
@@ -226,32 +236,91 @@ public class Pages
             }
             size -= len;
         }
-        while (n > 0)
-        {
-            page_table.RemoveAt(del_start);
-            --n;
-        }
-        cur_page = null;
         VerifyTotalSize();
     }
 
+    byte[] PageDataFromBuf(byte[] buf, ref int size, ref int offset)
+    {
+        int len = Math.Min(size, MAX_PAGE_SIZE);
+        byte[] data = new byte[len];
+        Buffer.BlockCopy(buf, offset, data, 0, len);
+        size -= len;
+        offset += len;
+        return data;
+    }
+
+    // TODO: get rid of size and use buf.Length instead?
+    // Note: @size is the total size of buf
+    Page[] PagesFromData(byte[] buf, int offset, int size)
+    {
+        size = size - offset;
+        Debug.Assert(size > 0);
+        int n = PagesForSize(size);
+        Page[] pages = new Page[n];
+        int cur_page = 0;
+        while (size > 0)
+        {
+            pages[cur_page].data = PageDataFromBuf(buf, ref size, ref offset);
+        }
+        return pages;
+    }
+
+    // TODO: see if can get rid of @size and derive it from @buf.Length
     void Insert(int page_index, byte[] buf, int size)
     {
         // TODO: add the end of buf at the beginning of page at page_index
         // if that page can be extended
+        page_table.InsertRange(page_index, PagesFromData(buf, 0, size));
+    }
 
-        int pagesToAdd = (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
-        if (0 == pagesToAdd)
-            return;
-        int offset = 0;
-        while (size > 0)
+    // TODO: see if can get rid of @size and derive it from @buf.Length
+    void AppendAtEnd(byte[] buf, int size)
+    {
+        // TODO: also use remaining space on the last page
+        page_table.AddRange(PagesFromData(buf, 0, size));
+    }
+
+    Tuple<byte[], byte[]> SplitBuf(byte[] b, int offset)
+    {
+        int leftSize = offset;
+        int rightSize = b.Length - leftSize;
+        byte[] left = new byte[leftSize];
+        byte[] right = new byte[rightSize];
+        Buffer.BlockCopy(b, 0, left, 0, leftSize);
+        Buffer.BlockCopy(b, offset, right, 0, rightSize);
+        Debug.Assert(right[right.Length] == b[b.Length]);
+        return new Tuple<byte[], byte[]>(left, right);
+    }
+
+    void SplitPage(int page_idx, int offset)
+    {
+        var bufs = SplitBuf(page_table[page_idx].data, offset);
+        page_table[page_idx] = new Page(bufs.Item1);;
+        page_table.Insert(page_idx + 1, new Page(bufs.Item2));
+    }
+
+    void InsertLowLevel(int page_idx, int offset, byte[] buf, int size)
+    {
+        if (0 == offset)
         {
-            int len = Math.Min(size, MAX_PAGE_SIZE);
-            byte[] data = new byte[len];
-            Buffer.BlockCopy(buf, offset, data, 0, len);
-            page_table.Insert(page_index++, new Page() { data = data });
-            offset += len;
-            size -= len;
+            Insert(page_idx, buf, size);
+            return;
+        }
+        SplitPage(page_idx, offset);
+        Insert(page_idx + 1, buf, size);
+    }
+
+    // TODO: see if can get rid of @size and derive it from @buf.Length
+    public void InsertLowLevel(int offset, byte[] buf, int size)
+    {
+        Debug.Assert(offset <= total_size);
+        if (offset == total_size)
+            AppendAtEnd(buf, size);
+        else
+        {
+            var pageWithIdx = FindPage(ref offset);
+            InsertLowLevel(pageWithIdx.Item2, offset, buf, size);
+            InvalidateCache();
         }
     }
 }
