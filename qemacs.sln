@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp", "csharp.csproj", "{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "csharp", "csharp\csharp.csproj", "{DE327B3E-98E3-4FE8-9F78-6D0D067399D2}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qemacs", "..\c\vs10proj\qemacs.vcxproj", "{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qemacs", "c\vs10proj\qemacs.vcxproj", "{CC0B1034-54A7-46FE-A779-1A5FDD5F1386}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
