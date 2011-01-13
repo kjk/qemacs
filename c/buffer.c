@@ -296,6 +296,41 @@ void eb_free_callback(EditBuffer *b, EditBufferCallback cb,
     }
 }
 
+class IEditBufferCallback {
+public:
+    virtual void cb(EditBuffer *b, enum LogOperation op, int offset, int size) = 0;
+};
+
+class OffsetCallback : IEditBufferCallback {
+public:
+    int *offset_ptr;
+
+    OffsetCallback(int *offset_ptr) {
+        this->offset_ptr = offset_ptr;
+    }
+
+    virtual void cb(EditBuffer *b, enum LogOperation op, int offset, int size);
+};
+
+void OffsetCallback::cb(EditBuffer *b, enum LogOperation op, int offset, int size)
+{
+    switch (op) {
+    case LOGOP_INSERT:
+        if (*offset_ptr > offset)
+            *offset_ptr += size;
+        break;
+    case LOGOP_DELETE:
+        if (*offset_ptr > offset) {
+            *offset_ptr -= size;
+            if (*offset_ptr < offset)
+                *offset_ptr = offset;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
 /* standard callback to move offsets */
 void eb_offset_callback(EditBuffer *b,
                         void *opaque,
