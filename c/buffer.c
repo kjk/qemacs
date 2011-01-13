@@ -114,14 +114,14 @@ void eb_delete(EditBuffer *b, int offset, int size)
 /* flush the log */
 void eb_log_reset(EditBuffer *b)
 {
-    if (b->log_buffer) {
-        eb_free(b->log_buffer);
-        b->log_buffer = NULL;
-        b->log_new_index = 0;
-        b->log_current = 0;
-        b->nb_logs = 0;
-    }
     b->modified = 0;
+    if (!b->log_buffer)
+        return;
+    eb_free(b->log_buffer);
+    b->log_buffer = NULL;
+    b->log_new_index = 0;
+    b->log_current = 0;
+    b->nb_logs = 0;
 }
 
 /* rename a buffer and add characters so that the name is unique */
