@@ -84,7 +84,7 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
         return;
 
     eb_addlog(dest, LOGOP_INSERT, dest_offset, size);
-    pages_insert_from(&dest->pages, dest_offset, &src->pages, src_offset, size);
+    dest->pages.InsertFrom(dest_offset, &src->pages, src_offset, size);
 }
 
 /* Insert 'size' bytes from 'buf' into 'b' at offset 'offset'. We must

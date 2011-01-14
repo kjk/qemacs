@@ -295,7 +295,7 @@ void Pages::InsertLowLevel(int offset, const u8 *buf, int size)
 }
 
 // TODO: not sure I didn't make mistakes converting this to page_table as PtrVec
-void pages_insert_from(Pages *dest_pages, int dest_offset,
+void Pages::InsertFrom(int dest_offset,
                   Pages *src_pages, int src_offset, int size)
 {
     Page *p, *q;
@@ -308,7 +308,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
         len = p->size - src_offset;
         if (len > size)
             len = size;
-        dest_pages->InsertLowLevel(dest_offset, p->data + src_offset, len);
+        InsertLowLevel(dest_offset, p->data + src_offset, len);
         dest_offset += len;
         size -= len;
         p = src_pages->PageAt(++p_idx);
@@ -318,22 +318,22 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
         return;
 
     /* cut the page at dest offset if needed */
-    page_index = dest_pages->nb_pages();
-    if (dest_offset < dest_pages->total_size) {
-        q = dest_pages->FindPage(&dest_offset, &page_index);
+    page_index = nb_pages();
+    if (dest_offset < total_size) {
+        q = FindPage(&dest_offset, &page_index);
         if (dest_offset > 0) {
             page_index++;
-            pages_insert(dest_pages, page_index, q->data + dest_offset, q->size - dest_offset);
+            pages_insert(this, page_index, q->data + dest_offset, q->size - dest_offset);
             /* must reload q because page_table may have been
                realloced */
-            q = dest_pages->PageAt(page_index - 1);
+            q = PageAt(page_index - 1);
             p->PrepareForUpdate();
             q->data = (u8*)realloc(q->data, dest_offset);
             q->size = dest_offset;
         }
     }
 
-    dest_pages->total_size += size;
+    total_size += size;
 
     /* compute the number of complete pages to insert */
     n = 0;
@@ -347,7 +347,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
     }
 
     if (n > 0) {
-        Page **qarr = dest_pages->page_table->MakeSpaceAt(page_index, n);
+        Page **qarr = page_table->MakeSpaceAt(page_index, n);
         p_idx = p_start;
         p = src_pages->PageAt(p_idx);
         page_index += n;
@@ -374,10 +374,11 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
     
     /* insert the remaning bytes */
     if (size > 0) {
-        pages_insert(dest_pages, page_index, p->data, size);
+        pages_insert(this, page_index, p->data, size);
     }
 
-    dest_pages->InvalidateCache();
+    InvalidateCache();
+    VerifySize();
 }
 
 int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)

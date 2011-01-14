@@ -116,6 +116,7 @@ public:
     void ReadWrite(int offset, u8 *buf, int size, int do_write);
     int  Read(int offset, void *buf, int size);
     void InsertLowLevel(int offset, const u8 *buf, int size);
+    void InsertFrom(int dest_offset, Pages *src_pages, int src_offset, int size);
 
 };
 
@@ -128,8 +129,6 @@ static inline void copy_attrs(Page *src, Page *dst)
     dst->read_only = src->read_only;
 }
 #endif
-
-void pages_insert_from(Pages *dest_pages, int dest_offset, Pages *src_pages, int src_offset, int size);
 
 int  pages_get_char_offset(Pages *pages, int offset, QECharset *charset);
 int  pages_goto_char(Pages *pages, QECharset *charset, int pos);
