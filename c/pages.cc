@@ -171,11 +171,11 @@ void Pages::ReadWrite(int offset, u8 *buf, int size, int do_write)
     }
 }
 
-int pages_read(Pages *pages, int offset, void *buf, int size)
+int Pages::Read(int offset, void *buf, int size)
 {
-    size = pages->LimitSize(offset, size);
+    size = LimitSize(offset, size);
     if (size > 0)
-        pages->ReadWrite(offset, (u8*)buf, size, 0);
+        ReadWrite(offset, (u8*)buf, size, 0);
     return size;
 }
 
@@ -489,13 +489,13 @@ int pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int
         goto Exit;
     }
 
-    pages_read(pages, offset, buf, 1);
+    pages->Read(offset, buf, 1);
     
     /* we use directly the charset conversion table to go faster */
     ch = charset_state->table[buf[0]];
     offset++;
     if (ch == ESCAPE_CHAR) {
-        pages_read(pages, offset, buf + 1, MAX_CHAR_BYTES - 1);
+        pages->Read(offset, buf + 1, MAX_CHAR_BYTES - 1);
         p = buf;
         ch = charset_state->decode_func(charset_state, (const u8 **)&p);
         offset += (p - buf) - 1;
@@ -520,7 +520,7 @@ int pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset)
           line/column system to be really generic */
        offset--;
        q = buf + sizeof(buf) - 1;
-       pages_read(pages, offset, q, 1);
+       pages->Read(offset, q, 1);
        if (charset == &charset_utf8) {
            while (*q >= 0x80 && *q < 0xc0) {
                if (offset == 0 || q == buf) {
@@ -531,7 +531,7 @@ int pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset)
                }
                offset--;
                q--;
-               pages_read(pages, offset, q, 1);
+               pages->Read(offset, q, 1);
            }
            ch = utf8_decode((const char **)(void *)&q);
        } else {

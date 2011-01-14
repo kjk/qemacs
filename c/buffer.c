@@ -57,7 +57,7 @@ static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size, int do_write)
 /* We must have: 0 <= offset < b->total_size */
 int eb_read(EditBuffer *b, int offset, void *buf, int size)
 {
-    return pages_read(&b->pages, offset, (u8*)buf, size);
+    return b->pages.Read(offset, (u8*)buf, size);
 }
 
 /* Note: eb_write can be used to insert after the end of the buffer */
