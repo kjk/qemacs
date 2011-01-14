@@ -558,7 +558,7 @@ static CmdDef c_commands[] = {
 
 static ModeDef c_mode;
 
-int c_init(void)
+int c_init()
 {
     /* c mode is almost like the text mode, so we copy and patch it */
     memcpy(&c_mode, &text_mode, sizeof(ModeDef));
@@ -573,4 +573,7 @@ int c_init(void)
     return 0;
 }
 
-qe_module_init(c_init);
+void module_c_init()
+{
+    c_init();
+}

@@ -186,7 +186,7 @@ int xml_mode_init(EditState *s, ModeSavedData *saved_data)
 
 static ModeDef xml_mode;
 
-int xml_init(void)
+int xml_init()
 {
     /* c mode is almost like the text mode, so we copy and patch it */
     memcpy(&xml_mode, &text_mode, sizeof(ModeDef));
@@ -199,4 +199,7 @@ int xml_init(void)
     return 0;
 }
 
-qe_module_init(xml_init);
+void module_xml_init()
+{
+    xml_init();
+}

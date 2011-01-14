@@ -1129,7 +1129,7 @@ CmdDef win32_commands[] = {
     CMD_DEF_END,
 };
 
-int win32_init(void)
+int win32_init()
 {
     qe_register_cmd_table(win32_commands, NULL);
     return qe_register_display(&win32_dpy);
@@ -1188,9 +1188,13 @@ void url_main_loop(void (*init)(void *opaque), void *opaque)
 }
 
 /* exit from url loop */
-void url_exit(void)
+void url_exit()
 {
     url_exit_request = 1;
 }
 
-qe_module_init(win32_init);
+void module_win32_init()
+{
+    win32_init();
+}
+

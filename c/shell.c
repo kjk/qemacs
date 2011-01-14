@@ -1356,4 +1356,8 @@ static int shell_init(void)
     return 0;
 }
 
-qe_module_init(shell_init);
+void module_shell_init()
+{
+    shell_init();
+}
+

@@ -275,7 +275,7 @@ static CmdDef bufed_global_commands[] = {
     CMD_DEF_END,
 };
 
-static int bufed_init(void)
+static int bufed_init()
 {
     /* inherit from list mode */
     /* CG: assuming list_mode already initialized ? */
@@ -295,4 +295,8 @@ static int bufed_init(void)
     return 0;
 }
 
-qe_module_init(bufed_init);
+void module_bufed_init()
+{
+    bufed_init();
+}
+

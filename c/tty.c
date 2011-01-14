@@ -693,9 +693,13 @@ static QEDisplay tty_dpy = {
     term_invalidate,
 };
 
-static int tty_init(void)
+static int tty_init()
 {
     return qe_register_display(&tty_dpy);
 }
 
-qe_module_init(tty_init);
+void module_tty_init()
+{
+    tty_init();
+}
+

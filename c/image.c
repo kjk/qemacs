@@ -843,7 +843,7 @@ static EditBufferDataType image_data_type = {
     image_buffer_close,
 };
 
-static int image_init(void)
+static int image_init()
 {
     av_register_all();
     eb_register_data_type(&image_data_type);
@@ -855,4 +855,7 @@ static int image_init(void)
     return 0;
 }
 
-qe_module_init(image_init);
+void module_image_init()
+{
+    image_init();
+}

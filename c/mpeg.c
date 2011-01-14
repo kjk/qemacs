@@ -171,11 +171,13 @@ static ModeDef mpeg_mode = {
     write_char: hex_write_char,
 };
 
-static int mpeg_init(void)
+static int mpeg_init()
 {
     qe_register_mode(&mpeg_mode);
     return 0;
 }
 
-
-qe_module_init(mpeg_init);
+void module_mpeg_init()
+{
+    mpeg_init();
+}

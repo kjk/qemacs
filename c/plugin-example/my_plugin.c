@@ -19,7 +19,7 @@ static CmdDef my_commands[] = {
     CMD_DEF_END,
 };
 
-static int my_plugin_init(void)
+static int my_plugin_init()
 {
     /* commands and default keys */
     qe_register_cmd_table(my_commands, NULL);
@@ -27,5 +27,7 @@ static int my_plugin_init(void)
     return 0;
 }
 
-
-qe_module_init(my_plugin_init);
+void module_my_plugin_init()
+{
+    my_plugin_init();
+}

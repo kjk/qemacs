@@ -906,7 +906,7 @@ ModeDef html_mode = {
     NULL /* next */
 };
 
-static int html_init(void)
+static int html_init()
 {
     css_init();
 
@@ -915,4 +915,7 @@ static int html_init(void)
     return 0;
 }
 
-qe_module_init(html_init);
+void module_html_init()
+{
+    html_init();
+}

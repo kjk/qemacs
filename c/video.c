@@ -977,4 +977,8 @@ int video_init(void)
     return 0;
 }
 
-qe_module_init(video_init);
+void module_video_init()
+{
+    video_init();
+}
+

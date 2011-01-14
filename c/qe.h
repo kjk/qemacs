@@ -455,27 +455,6 @@ void log_with_pri(int log_pri, char *txt);
 void log_txt(char *txt);
 void log_nl(char *txt);
 
-/* qe module handling */
-
-#ifdef QE_MODULE
-
-/* dynamic module case */
-
-#define qe_module_init(fn) \
-        int __qe_module_init(void) { return fn(); }
-
-#define qe_module_exit(fn) \
-        void __qe_module_exit(void) { fn(); }
-
-#else /* QE_MODULE */
-
-#define qe_module_init(fn) \
-        void module_ ## fn (void) { fn(); }
-
-#define qe_module_exit(fn)
-
-#endif /* QE_MODULE */
-
 /* display.c */
 
 #include "display.h"

@@ -615,7 +615,7 @@ static CmdDef dired_global_commands[] = {
     CMD_DEF_END,
 };
 
-static int dired_init(void)
+static int dired_init()
 {
     /* inherit from list mode */
     /* CG: assuming list_mode already initialized ? */
@@ -636,4 +636,7 @@ static int dired_init(void)
     return 0;
 }
 
-qe_module_init(dired_init);
+void module_dired_init()
+{
+    dired_init();
+}

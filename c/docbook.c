@@ -39,7 +39,7 @@ static int docbook_mode_init(EditState *s, ModeSavedData *saved_data)
 
 ModeDef docbook_mode;
 
-static int docbook_init(void)
+static int docbook_init()
 {
     /* inherit from html mode */
     memcpy(&docbook_mode, &html_mode, sizeof(ModeDef));
@@ -51,4 +51,8 @@ static int docbook_init(void)
     return 0;
 }
 
-qe_module_init(docbook_init);
+void module_docbook_init()
+{
+    docbook_init();
+}
+

@@ -194,4 +194,7 @@ static int unihex_init(void)
     return 0;
 }
 
-qe_module_init(unihex_init);
+void module_unihex_init()
+{
+    unihex_init();
+}

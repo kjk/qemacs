@@ -1715,10 +1715,13 @@ static CmdOptionDef cmd_options[] = {
     { NULL },
 };
 
-int x11_init(void)
+int x11_init()
 {
     qe_register_cmd_line_options(cmd_options);
     return qe_register_display(&x11_dpy);
 }
 
-qe_module_init(x11_init);
+void module_x11_init()
+{
+    x11_init();
+}

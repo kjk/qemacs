@@ -300,7 +300,7 @@ static QECharset charset_sjis = {
     NULL
 };
 
-int charset_more_init(void)
+int charset_more_init()
 {
     qe_register_charset(&charset_8859_2);
     qe_register_charset(&charset_cp1125);
@@ -332,6 +332,8 @@ int charset_more_init(void)
     return 0;
 }
 
-qe_module_init(charset_more_init);
-
+void module_charset_more_init()
+{
+    charset_more_init();
+}
 

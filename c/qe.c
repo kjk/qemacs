@@ -19,9 +19,6 @@
 #include "qe.h"
 #include "json.h"
 #include "qfribidi.h"
-#ifdef CONFIG_DLL
-#include <dlfcn.h>
-#endif
 
 /* Set to 1 if you always want to see a selection.
    TODO: if it's 1, the behaviour is not good since
@@ -7216,48 +7213,6 @@ static inline void init_all_modules(void)
 #endif
 }
 
-#ifdef CONFIG_DLL
-
-void load_all_modules(QEmacsState *qs)
-{
-    QErrorContext ec = qs->ec;
-    FindFileState *ffs;
-    char filename[MAX_FILENAME_SIZE];
-    void *h;
-    int (*init_func)(void);
-    
-    ffs = find_file_open(qs->res_path, "*.so");
-    if (!ffs)
-        return;
-
-    qs->ec.function = "load-all-modules";
-
-    while (!find_file_next(ffs, filename, sizeof(filename))) {
-        h = dlopen(filename, RTLD_LAZY);
-        if (!h) {
-            char *error = dlerror();
-            put_status(NULL, "Could not open module '%s': %s",
-                       filename, error);
-            continue;
-        }
-        init_func = dlsym(h, "__qe_module_init");
-        if (!init_func) {
-            dlclose(h);
-            put_status(NULL,
-                       "Could not find qemacs initializer in module '%s'", 
-                       filename);
-            continue;
-        }
-        
-        /* all is OK: we can init the module now */
-        init_func();
-    }
-    find_file_close(ffs);
-    qs->ec = ec;
-}
-
-#endif
-
 typedef struct QEArgs {
     int argc;
     char **argv;
@@ -7307,11 +7262,6 @@ void qe_init(void *opaque)
 
     /* init all external modules in link order */
     init_all_modules();
-
-#ifdef CONFIG_DLL
-    /* load all dynamic modules */
-    load_all_modules(qs);
-#endif
 
 #if 0
     /* see if invoked as player */
