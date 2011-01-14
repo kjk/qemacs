@@ -7581,6 +7581,8 @@ static void settings_load(void)
     assert(deleted);
 }
 
+extern void free_css_ident();
+
 #ifdef CONFIG_WIN32
 int main1(int argc, char **argv)
 #else
@@ -7604,6 +7606,7 @@ int main(int argc, char **argv)
     free_completions();
     free_cmds();
     free_keys();
+    free_css_ident();
 
     settings_save();
     return 0;

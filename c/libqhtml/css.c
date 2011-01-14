@@ -298,6 +298,20 @@ const char *css_ident_str(CSSIdent id)
     return table_ident[id]->str;
 }
 
+void free_css_ident()
+{
+    for (int i=0; i < dimof(hash_ident); i++) {
+        CSSIdentEntry *e = hash_ident[i];
+        while (e) {
+            CSSIdentEntry *next = e->hash_next;
+            free(e);
+            e = next;
+        }
+        hash_ident[i] = NULL;
+    }
+    free(table_ident);
+}
+
 CSSIdent css_new_ident(const char *str)
 {
     CSSIdentEntry **pp, *p;
