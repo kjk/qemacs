@@ -61,6 +61,11 @@ public:
 class Pages {
 
 private:
+    /* page cache */
+    Page *  cur_page;
+    int     cur_offset;
+    int     cur_idx;
+
     bool IsOffsetInCache(int offset) {
         return (NULL != cur_page) && 
                (offset >= cur_offset) && 
@@ -69,11 +74,6 @@ private:
     
 public:
     PtrVec<Page> *page_table;
-
-    /* page cache */
-    Page *  cur_page;
-    int     cur_offset;
-    int     cur_idx;
 
     int     TotalSize() {
         int size = 0;
@@ -101,6 +101,10 @@ public:
     }
 
     Page *FindPage(int *offset_ptr, int *idx_ptr = NULL);
+
+    void InvalidateCache() {
+        cur_page = NULL;
+    }
 
 };
 

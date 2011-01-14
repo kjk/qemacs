@@ -214,7 +214,7 @@ void pages_delete(Pages *pages, int offset, int size)
     }
 
     /* the page cache is no longer valid */
-    pages->cur_page = NULL;
+    pages->InvalidateCache();
 }
 
 /* internal function for insertion : 'buf' of size 'size' at the
@@ -290,8 +290,7 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
     if (size > 0)
         pages_insert(pages, page_index + 1, buf, size);
 
-    /* the page cache is no longer valid */
-    pages->cur_page = NULL;
+    pages->InvalidateCache();
 }
 
 // TODO: not sure I didn't make mistakes converting this to page_table as PtrVec
@@ -377,8 +376,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
         pages_insert(dest_pages, page_index, p->data, size);
     }
 
-    /* the page cache is no longer valid */
-    dest_pages->cur_page = NULL;
+    dest_pages->InvalidateCache();
 }
 
 int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)
