@@ -4301,6 +4301,16 @@ void register_completion(const char *name, CompletionFunc completion_func)
     *lp = p;
 }
 
+void free_completions()
+{
+    CompletionEntry *p = first_completion;
+    while (p) {
+        CompletionEntry *next = p->next;
+        free(p);
+        p = next;
+    }
+}
+
 static CompletionFunc find_completion(const char *name)
 {
     CompletionEntry *p;
@@ -7554,6 +7564,7 @@ int main(int argc, char **argv)
     close_input_methods();
 
     dpy_close(&global_screen);
+    free_completions();
     settings_save();
     return 0;
 }
