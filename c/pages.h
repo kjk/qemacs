@@ -2,6 +2,7 @@
 #define PAGE_H__
 
 #include "ptrvec.h"
+#include <assert.h>
 
 #define MAX_PAGE_SIZE 4096
 //#define MAX_PAGE_SIZE 16
@@ -84,6 +85,10 @@ public:
         return size;
     }
 
+    void VerifySize() {
+        assert(TotalSize() == total_size);
+    }
+
     int     total_size; /* sum of Page.size in page_table */
 
     Pages() {
@@ -107,6 +112,7 @@ public:
     }
 
     int  LimitSize(int offset, int size);
+    void Delete(int offset, int size);
 
 };
 
@@ -120,7 +126,6 @@ static inline void copy_attrs(Page *src, Page *dst)
 }
 #endif
 
-void pages_delete(Pages *pages, int offset, int size);
 
 void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write);
 int  pages_read(Pages *pages, int offset, void *buf, int size);

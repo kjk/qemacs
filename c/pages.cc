@@ -179,14 +179,13 @@ int pages_read(Pages *pages, int offset, void *buf, int size)
     return size;
 }
 
-void pages_delete(Pages *pages, int offset, int size)
+void Pages::Delete(int offset, int size)
 {
     int len;
 
-    pages->total_size -= size;
+    total_size -= size;
     int idx;
-    Page *p = pages->FindPage(&offset, &idx);
-    PtrVec<Page> *page_table = pages->page_table;
+    Page *p = FindPage(&offset, &idx);
     while (size > 0) {
         len = p->size - offset;
         if (len > size)
@@ -196,7 +195,7 @@ void pages_delete(Pages *pages, int offset, int size)
             if (!p->read_only)
                 free(p->data);
             page_table->RemoveAt(idx);
-            p = page_table->At(idx);
+            p = PageAt(idx);
             offset = 0;
         } else {
             p->PrepareForUpdate();
@@ -206,7 +205,7 @@ void pages_delete(Pages *pages, int offset, int size)
             p->data = (u8*)realloc(p->data, p->size);
             offset += len;
             if (offset >= p->size) {
-                p = page_table->At(++idx);
+                p = PageAt(++idx);
                 offset = 0;
             }
         }
@@ -214,7 +213,8 @@ void pages_delete(Pages *pages, int offset, int size)
     }
 
     /* the page cache is no longer valid */
-    pages->InvalidateCache();
+    InvalidateCache();
+    VerifySize();
 }
 
 /* internal function for insertion : 'buf' of size 'size' at the

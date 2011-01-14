@@ -108,7 +108,7 @@ void eb_delete(EditBuffer *b, int offset, int size)
         return;
 
     eb_addlog(b, LOGOP_DELETE, offset, size);
-    pages_delete(&b->pages, offset, size);
+    b->pages.Delete(offset, size);
 }
 
 /* flush the log */
