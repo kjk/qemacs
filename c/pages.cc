@@ -466,7 +466,7 @@ int Pages::GotoPos(CharsetDecodeState *charset_state, int line1, int col1)
             }
             /* test if we want to go after the end of the line */
             offset += q - p->data;
-            while (col < col1 && pages_nextc(this, charset_state, offset, &offset1) != '\n') {
+            while (col < col1 && NextChar(charset_state, offset, &offset1) != '\n') {
                 col++;
                 offset = offset1;
             }
@@ -479,24 +479,24 @@ int Pages::GotoPos(CharsetDecodeState *charset_state, int line1, int col1)
     return total_size;
 }
 
-int pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int *next_offset)
+int Pages::NextChar(CharsetDecodeState *charset_state, int offset, int *next_offset)
 {
     u8 buf[MAX_CHAR_BYTES], *p;
     int ch;
 
-    if (offset >= pages->total_size) {
-        offset = pages->total_size;
+    if (offset >= total_size) {
+        offset = total_size;
         ch = '\n';
         goto Exit;
     }
 
-    pages->Read(offset, buf, 1);
+    Read(offset, buf, 1);
     
     /* we use directly the charset conversion table to go faster */
     ch = charset_state->table[buf[0]];
     offset++;
     if (ch == ESCAPE_CHAR) {
-        pages->Read(offset, buf + 1, MAX_CHAR_BYTES - 1);
+        Read(offset, buf + 1, MAX_CHAR_BYTES - 1);
         p = buf;
         ch = charset_state->decode_func(charset_state, (const u8 **)&p);
         offset += (p - buf) - 1;
@@ -508,7 +508,7 @@ Exit:
     return ch;
 }
 
-int pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset)
+int Pages::PrevChar(QECharset *charset, int offset, int *prev_offset)
 {
    int ch;
    u8 buf[MAX_CHAR_BYTES], *q;
@@ -521,7 +521,7 @@ int pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset)
           line/column system to be really generic */
        offset--;
        q = buf + sizeof(buf) - 1;
-       pages->Read(offset, q, 1);
+       Read(offset, q, 1);
        if (charset == &charset_utf8) {
            while (*q >= 0x80 && *q < 0xc0) {
                if (offset == 0 || q == buf) {
@@ -532,7 +532,7 @@ int pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset)
                }
                offset--;
                q--;
-               pages->Read(offset, q, 1);
+               Read(offset, q, 1);
            }
            ch = utf8_decode((const char **)(void *)&q);
        } else {

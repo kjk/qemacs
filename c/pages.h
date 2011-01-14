@@ -126,6 +126,9 @@ public:
     int  GetPos(CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset);
     int  GotoPos(CharsetDecodeState *charset_state, int line1, int col1);
 
+    int  NextChar(CharsetDecodeState *charset_state, int offset, int *next_offset);
+    int  PrevChar(QECharset *charset, int offset, int *prev_offset);
+
 };
 
 #if 0
@@ -138,8 +141,6 @@ static inline void copy_attrs(Page *src, Page *dst)
 }
 #endif
 
-int  pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int *next_offset);
-int  pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset);
 
 #endif
 

@@ -526,14 +526,14 @@ void eb_set_charset(EditBuffer *b, QECharset *charset)
 /* XXX: change API to go faster */
 int eb_nextc(EditBuffer *b, int offset, int *next_offset)
 {
-    return pages_nextc(&b->pages, &b->charset_state, offset, next_offset);
+    return b->pages.NextChar(&b->charset_state, offset, next_offset);
 }
 
 /* XXX: only UTF8 charset is supported */
 /* XXX: suppress that */
 int eb_prevc(EditBuffer *b, int offset, int *prev_offset)
 {
-    return pages_prevc(&b->pages, b->charset, offset, prev_offset);
+    return b->pages.PrevChar(b->charset, offset, prev_offset);
 }
 
 int eb_goto_pos(EditBuffer *b, int line1, int col1)
