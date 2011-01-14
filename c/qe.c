@@ -186,8 +186,17 @@ CmdDef *qe_find_cmd(const char *cmd_name)
     return NULL;
 }
 
-static int qe_register_binding1(unsigned int *keys, int nb_keys,
-                                CmdDef *d, ModeDef *m)
+void free_keys()
+{
+    KeyDef *k = first_key;
+    while (k) {
+        KeyDef *next = k->next;
+        free(k);
+        k = next;
+    }
+}
+
+static int qe_register_binding1(unsigned int *keys, int nb_keys, CmdDef *d, ModeDef *m)
 {
     KeyDef **lp, *p;
 
@@ -7594,6 +7603,7 @@ int main(int argc, char **argv)
 
     free_completions();
     free_cmds();
+    free_keys();
 
     settings_save();
     return 0;
