@@ -44,7 +44,7 @@ EditBufferDataType *first_buffer_data_type = NULL;
 /* Read or write in the buffer. We must have 0 <= offset < b->total_size */
 static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size, int do_write)
 {
-    size = pages_limit_size(&b->pages, offset, size);
+    size = b->pages.LimitSize(offset, size);
     if (size > 0) {
         if (do_write)
             eb_addlog(b, LOGOP_WRITE, offset, size);

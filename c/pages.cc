@@ -137,10 +137,10 @@ Page *Pages::FindPage(int *offset_ptr, int *idx_ptr)
     return cur_page;
 }
 
-int pages_limit_size(Pages *pages, int offset, int size)
+int Pages::LimitSize(int offset, int size)
 {
-    if ((offset + size) > pages->total_size)
-        size = pages->total_size - offset;
+    if ((offset + size) > total_size)
+        size = total_size - offset;
     if (size <= 0)
         return 0;
     return size;
@@ -173,7 +173,7 @@ void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
 
 int pages_read(Pages *pages, int offset, void *buf, int size)
 {
-    size = pages_limit_size(pages, offset, size);
+    size = pages->LimitSize(offset, size);
     if (size > 0)
         pages_rw(pages, offset, (u8*)buf, size, 0);
     return size;

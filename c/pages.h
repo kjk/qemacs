@@ -106,6 +106,8 @@ public:
         cur_page = NULL;
     }
 
+    int  LimitSize(int offset, int size);
+
 };
 
 #if 0
@@ -118,7 +120,6 @@ static inline void copy_attrs(Page *src, Page *dst)
 }
 #endif
 
-int  pages_limit_size(Pages *pages, int offset, int size);
 void pages_delete(Pages *pages, int offset, int size);
 
 void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write);
