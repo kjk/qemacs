@@ -115,7 +115,8 @@ void qe_register_mode(ModeDef *m)
 
     /* record mode in mode list */
     p = &first_mode;
-    while (*p != NULL) p = &(*p)->next;
+    while (*p != NULL)
+        p = &(*p)->next;
     m->next = NULL;
     *p = m;
     
@@ -130,29 +131,31 @@ void qe_register_mode(ModeDef *m)
         m->mode_line = text_mode_line;
     
     /* add a new command to switch to that mode */
-    if (!(m->mode_flags & MODEF_NOCMD)) {
-        char buf[64], *name;
-        int size;
+    if (m->mode_flags & MODEF_NOCMD)
+        return;
 
-        table = (CmdDef*)malloc(sizeof(CmdDef) * 2);
-        memset(table, 0, sizeof(CmdDef) * 2);
-        table->key = KEY_NONE;
-        table->alt_key = KEY_NONE;
+    char buf[64], *name;
+    int size;
 
-        /* lower case convert for C mode */
-        pstrcpy(buf, sizeof(buf) - 10, m->name);
-        css_strtolower(buf, sizeof(buf));
-        pstrcat(buf, sizeof(buf) - 10, "-mode");
-        size = strlen(buf) + 1;
-        buf[size++] = 'S'; /* constant string parameter */
-        buf[size++] = '\0';
-        name = (char*)malloc(size);
-        memcpy(name, buf, size);
-        table->name = name;
-        table->action.func = (void*)do_cmd_set_mode;
-        table->val = strdup(m->name);
-        qe_register_cmd_table(table, NULL);
-    }
+    table = (CmdDef*)malloc(sizeof(CmdDef) * 2);
+    memset(table, 0, sizeof(CmdDef) * 2);
+    table->is_static = 0;
+    table->key = KEY_NONE;
+    table->alt_key = KEY_NONE;
+
+    /* lower case convert for C mode */
+    pstrcpy(buf, sizeof(buf) - 10, m->name);
+    css_strtolower(buf, sizeof(buf));
+    pstrcat(buf, sizeof(buf) - 10, "-mode");
+    size = strlen(buf) + 1;
+    buf[size++] = 'S'; /* constant string parameter */
+    buf[size++] = '\0';
+    name = (char*)malloc(size);
+    memcpy(name, buf, size);
+    table->name = name;
+    table->action.func = (void*)do_cmd_set_mode;
+    table->val = strdup(m->name);
+    qe_register_cmd_table(table, NULL);
 }
 
 static ModeDef *find_mode(const char *mode_name)
@@ -171,9 +174,7 @@ static ModeDef *find_mode(const char *mode_name)
 
 CmdDef *qe_find_cmd(const char *cmd_name)
 {
-    CmdDef *d;
-    
-    d = first_cmd;
+    CmdDef *d = first_cmd;
     while (d != NULL) {
         while (d->name != NULL) {
             if (!strcmp(cmd_name, d->name))
@@ -300,11 +301,36 @@ void do_cd(EditState *s, const char *name)
     /* CG: Should display current directory after chdir */
 }
 
+// TODO: the problem is that some are static and some are dynamically allocated
+void free_cmds()
+{    CmdDef *d = first_cmd;
+    while (d) {
+        int should_free = !d->is_static;
+        CmdDef *tmp = d;
+        while (tmp->name) {
+            if (should_free) {
+                free((void*)tmp->name);
+                tmp->name = NULL;
+                free(tmp->val);
+                tmp->val = NULL;
+            }
+            ++tmp;
+        }
+        CmdDef *next = tmp->action.next;
+        if (should_free)
+        {
+            free(d->val);
+            free(d);
+        }
+        d = next;
+    }
+}
+
 /* if mode is non NULL, the defined keys are only active in this mode */
 void qe_register_cmd_table(CmdDef *cmds, const char *mode)
 {
     CmdDef **ld, *d;
-    ModeDef *m;
+    ModeDef *m = NULL;
 
     m = NULL;
     if (mode)
@@ -3708,6 +3734,7 @@ void do_define_kbd_macro(EditState *s, const char *name, const char *keys,
 
     def = (CmdDef*)malloc(2 * sizeof(CmdDef));
     memset(def, 0, sizeof(CmdDef) * 2);
+    def->is_static = 0;
     def->key = def->alt_key = KEY_NONE;
     def->name = macro_name;
     def->action.func = do_execute_macro_keys;
@@ -7564,7 +7591,10 @@ int main(int argc, char **argv)
     close_input_methods();
 
     dpy_close(&global_screen);
+
     free_completions();
+    free_cmds();
+
     settings_save();
     return 0;
 }

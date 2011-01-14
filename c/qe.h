@@ -725,6 +725,7 @@ void unget_key(int key);
 /* command definitions */
 
 typedef struct CmdDef {
+    int is_static;
     unsigned short key;       /* normal key */
     unsigned short alt_key;   /* alternate key */
     const char *name;
@@ -736,13 +737,13 @@ typedef struct CmdDef {
 } CmdDef;
 
 /* new command macros */
-#define CMD_(key, key_alt, name, func, args) { key, key_alt, name "\0" args, { (void *)(func) }, 0 },
-#define CMDV(key, key_alt, name, func, val, args) { key, key_alt, name "\0" args, { (void *)(func) }, (void *)(val) },
+#define CMD_(key, key_alt, name, func, args) { 1, key, key_alt, name "\0" args, { (void *)(func) }, 0 },
+#define CMDV(key, key_alt, name, func, val, args) { 1, key, key_alt, name "\0" args, { (void *)(func) }, (void *)(val) },
 
 /* old macros for compatibility */
-#define CMD0(key, key_alt, name, func) { key, key_alt, name "\0", { (void *)(func) } },
-#define CMD1(key, key_alt, name, func, val) { key, key_alt, name "\0v", { (void *)(func) }, (void*)(val) },
-#define CMD_DEF_END { 0, 0, NULL, { NULL }, 0 }
+#define CMD0(key, key_alt, name, func) { 1, key, key_alt, name "\0", { (void *)(func) } },
+#define CMD1(key, key_alt, name, func, val) { 1, key, key_alt, name "\0v", { (void *)(func) }, (void*)(val) },
+#define CMD_DEF_END { 1, 0, 0, NULL, { NULL }, 0 }
 
 void qe_register_mode(ModeDef *m);
 void qe_register_cmd_table(CmdDef *cmds, const char *mode);
