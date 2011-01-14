@@ -538,12 +538,12 @@ int eb_prevc(EditBuffer *b, int offset, int *prev_offset)
 
 int eb_goto_pos(EditBuffer *b, int line1, int col1)
 {
-    return pages_goto_pos(&b->pages, &b->charset_state, line1, col1);
+    return b->pages.GotoPos(&b->charset_state, line1, col1);
 }
 
 int eb_get_pos(EditBuffer *b, int *line_ptr, int *col_ptr, int offset)
 {
-    return pages_get_pos(&b->pages, &b->charset_state, line_ptr, col_ptr, offset);
+    return b->pages.GetPos(&b->charset_state, line_ptr, col_ptr, offset);
 }
 
 /* gives the byte offset of a given character, taking the charset into

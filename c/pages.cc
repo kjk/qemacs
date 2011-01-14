@@ -413,12 +413,12 @@ int Pages::GotoChar(QECharset *charset, int pos)
     return offset;
 }
 
-int pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset)
+int Pages::GetPos(CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset)
 {
     QASSERT(offset >= 0);
     int line = 0, col = 0;
-    for (int idx=0; idx < pages->nb_pages(); idx++) {
-        Page *p = pages->PageAt(idx);
+    for (int idx=0; idx < nb_pages(); idx++) {
+        Page *p = PageAt(idx);
         if (offset < p->size) {
             int line1, col1;
             get_pos(p->data, offset, &line1, &col1, charset_state);
@@ -440,14 +440,14 @@ int pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr
     return line;
 }
 
-int pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, int col1)
+int Pages::GotoPos(CharsetDecodeState *charset_state, int line1, int col1)
 {
     int line2, col2, offset1;
     u8 *q, *q_end;
 
     int line = 0, col = 0, offset = 0;
-    for (int idx=0; idx < pages->nb_pages(); idx++) {
-        Page *p = pages->PageAt(idx);
+    for (int idx=0; idx < nb_pages(); idx++) {
+        Page *p = PageAt(idx);
         p->CalcPos(charset_state);
         line2 = line + p->nb_lines;
         if (p->nb_lines)
@@ -466,7 +466,7 @@ int pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, i
             }
             /* test if we want to go after the end of the line */
             offset += q - p->data;
-            while (col < col1 && pages_nextc(pages, charset_state, offset, &offset1) != '\n') {
+            while (col < col1 && pages_nextc(this, charset_state, offset, &offset1) != '\n') {
                 col++;
                 offset = offset1;
             }
@@ -476,7 +476,7 @@ int pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, i
         col = col2;
         offset += p->size;
     }
-    return pages->total_size;
+    return total_size;
 }
 
 int pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int *next_offset)

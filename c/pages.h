@@ -123,6 +123,9 @@ public:
     int  GetCharOffset(int offset, QECharset *charset);
     int  GotoChar(QECharset *charset, int pos);
 
+    int  GetPos(CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset);
+    int  GotoPos(CharsetDecodeState *charset_state, int line1, int col1);
+
 };
 
 #if 0
@@ -134,9 +137,6 @@ static inline void copy_attrs(Page *src, Page *dst)
     dst->read_only = src->read_only;
 }
 #endif
-
-int  pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset);
-int  pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, int col1);
 
 int  pages_nextc(Pages *pages, CharsetDecodeState *charset_state, int offset, int *next_offset);
 int  pages_prevc(Pages *pages, QECharset *charset, int offset, int *prev_offset);
