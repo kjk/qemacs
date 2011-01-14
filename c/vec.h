@@ -1,13 +1,13 @@
-#ifndef PTRVEC_H__
-#define PTRVEC_H__
+#ifndef VEC_H__
+#define VEC_H__
 
 template <typename T>
-class PtrVec {
+class Vec {
     static const int INTERNAL_BUF_CAP = 16;
     int  len;
     int  cap;
-    T ** els;
-    T *  buf[INTERNAL_BUF_CAP];
+    T *  els;
+    T    buf[INTERNAL_BUF_CAP];
 
 public:
     void EnsureCap(int needed) {
@@ -21,28 +21,28 @@ public:
         if (needed > newcap)
             newcap = needed;
 
-        T ** newels = (T**)malloc(newcap * sizeof(T*));
+        T * newels = (T*)malloc(newcap * sizeof(T));
         if (len > 0)
-            memcpy(newels, els, len * sizeof(T*));
+            memcpy(newels, els, len * sizeof(T));
         if (els != buf)
             free(els);
         els = newels;
         cap = newcap;
     }
 
-    PtrVec(int initcap=0) {
+    Vec(int initcap=0) {
         els = buf;
         cap = INTERNAL_BUF_CAP;
         len = 0;
         EnsureCap(initcap);
     }
 
-    ~PtrVec() {
+    ~Vec() {
         if (els != buf)
             free(els);
     }
 
-    T* At(int idx) {
+    T At(int idx) {
         return els[idx];
     }
 
@@ -50,20 +50,20 @@ public:
         return len;
     }
 
-    T** MakeSpaceAt(int idx, int count=1) {
+    T* MakeSpaceAt(int idx, int count=1) {
         EnsureCap(len + count);
-        T** res = &(els[idx]);
+        T* res = &(els[idx]);
         int tomove = len - idx;
         if (tomove > 0) {
-            T** src = els + idx;
-            T** dst = els + idx + count;
-            memmove(dst, src, tomove * sizeof(T*));
+            T* src = els + idx;
+            T* dst = els + idx + count;
+            memmove(dst, src, tomove * sizeof(T));
         }
         len += count;
         return res;
     }
 
-    void InsertAt(int idx, T *el) {
+    void InsertAt(int idx, T el) {
         MakeSpaceAt(idx, 1)[0] = el;;
     }
 
@@ -79,13 +79,13 @@ public:
         return -1;
     }
 
-    T *RemoveAt(int idx, int count=1) {
-        T *res = els[idx];
+    T RemoveAt(int idx, int count=1) {
+        T res = els[idx];
         int tomove = len - idx - count;
         if (tomove > 0) {
-            T **dst = els + idx;
-            T **src = els + idx + count;
-            memmove(dst, src, tomove * sizeof(T*));
+            T *dst = els + idx;
+            T *src = els + idx + count;
+            memmove(dst, src, tomove * sizeof(T));
         }
         len -= count;
         return res;
@@ -95,7 +95,7 @@ public:
         Append(el);
     }
 
-    T* Pop() {
+    T Pop() {
         if (0 == len)
             return NULL;
         return els[--len];
@@ -109,9 +109,22 @@ public:
         cap = INTERNAL_BUF_CAP;            
     }
 
+};
+
+template <typename T>
+class PtrVec : public Vec<T*> {
+public:
+    PtrVec(int initcap = 0) 
+        : Vec(initcap)
+    {        
+    }
+
+    ~PtrVec() {
+    }
+
     void DeleteAll() {
         while (len > 0) {
-            T *el = Pop();
+            T* el = Pop();
             delete el;
         }
     }
