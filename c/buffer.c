@@ -92,7 +92,7 @@ void eb_insert_buffer(EditBuffer *dest, int dest_offset,
 void eb_insert(EditBuffer *b, int offset, const void *buf, int size)
 {
     eb_addlog(b, LOGOP_INSERT, offset, size);
-    pages_insert_lowlevel(&b->pages, offset, (const u8*)buf, size);
+    b->pages.InsertLowLevel(offset, (const u8*)buf, size);
 }
 
 /* Append 'size' bytes from 'buf' at the end of 'b' */

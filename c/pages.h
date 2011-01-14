@@ -115,6 +115,7 @@ public:
     void Delete(int offset, int size);
     void ReadWrite(int offset, u8 *buf, int size, int do_write);
     int  Read(int offset, void *buf, int size);
+    void InsertLowLevel(int offset, const u8 *buf, int size);
 
 };
 
@@ -128,7 +129,6 @@ static inline void copy_attrs(Page *src, Page *dst)
 }
 #endif
 
-void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size);
 void pages_insert_from(Pages *dest_pages, int dest_offset, Pages *src_pages, int src_offset, int size);
 
 int  pages_get_char_offset(Pages *pages, int offset, QECharset *charset);

@@ -251,15 +251,15 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
 }
 
 /* We must have : 0 <= offset <= pages->total_size */
-void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
+void Pages::InsertLowLevel(int offset, const u8 *buf, int size)
 {
     int len, len_out;
     int page_index = -1;
-    pages->total_size += size;
+    total_size += size;
     if (offset > 0) {
         int page_index;
         offset--;
-        Page *p = pages->FindPage(&offset, &page_index);
+        Page *p = FindPage(&offset, &page_index);
         offset++;
 
         /* compute what we can insert in current page */
@@ -269,13 +269,13 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
         /* number of bytes to put in next pages */
         len_out = p->size + len - MAX_PAGE_SIZE;
         if (len_out > 0)
-            pages_insert(pages, page_index + 1, p->data + p->size - len_out, len_out);
+            pages_insert(this, page_index + 1, p->data + p->size - len_out, len_out);
         else
             len_out = 0;
 
         /* now we can insert in current page */
         if (len > 0) {
-            p = pages->page_table->At(page_index);
+            p = PageAt(page_index);
             p->PrepareForUpdate();
             p->size += len - len_out;
             p->data = (u8*)realloc(p->data, p->size);
@@ -288,9 +288,10 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
 
     /* insert the remaining data in the next pages */
     if (size > 0)
-        pages_insert(pages, page_index + 1, buf, size);
+        pages_insert(this, page_index + 1, buf, size);
 
-    pages->InvalidateCache();
+    InvalidateCache();
+    VerifySize();
 }
 
 // TODO: not sure I didn't make mistakes converting this to page_table as PtrVec
@@ -307,10 +308,10 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
         len = p->size - src_offset;
         if (len > size)
             len = size;
-        pages_insert_lowlevel(dest_pages, dest_offset, p->data + src_offset, len);
+        dest_pages->InsertLowLevel(dest_offset, p->data + src_offset, len);
         dest_offset += len;
         size -= len;
-        p = src_pages->page_table->At(++p_idx);
+        p = src_pages->PageAt(++p_idx);
     }
 
     if (size == 0)
@@ -325,7 +326,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
             pages_insert(dest_pages, page_index, q->data + dest_offset, q->size - dest_offset);
             /* must reload q because page_table may have been
                realloced */
-            q = dest_pages->page_table->At(page_index - 1);
+            q = dest_pages->PageAt(page_index - 1);
             p->PrepareForUpdate();
             q->data = (u8*)realloc(q->data, dest_offset);
             q->size = dest_offset;
@@ -342,13 +343,13 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
         size -= p->size;
         ++n;
         if (size > 0)
-            p = src_pages->page_table->At(++p_idx);
+            p = src_pages->PageAt(++p_idx);
     }
 
     if (n > 0) {
         Page **qarr = dest_pages->page_table->MakeSpaceAt(page_index, n);
         p_idx = p_start;
-        p = src_pages->page_table->At(p_idx);
+        p = src_pages->PageAt(p_idx);
         page_index += n;
         while (n > 0) {
             len = p->size;
@@ -366,7 +367,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
                 memcpy(q->data, p->data, len);
             }
             n--;
-            p = src_pages->page_table->At(++p_idx);
+            p = src_pages->PageAt(++p_idx);
             q++;
         }
     }
