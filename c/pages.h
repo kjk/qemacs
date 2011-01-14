@@ -79,7 +79,7 @@ public:
     int     TotalSize() {
         int size = 0;
         for (int i=0; i<nb_pages(); i++) {
-            Page *p = page_table->At(i);
+            Page *p = PageAt(i);
             size += p->size;
         }
         return size;

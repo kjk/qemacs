@@ -121,10 +121,10 @@ Page *Pages::FindPage(int *offset_ptr, int *idx_ptr)
     int offset = *offset_ptr;
     if (!IsOffsetInCache(offset)) {
         int idx = 0;
-        Page *p = page_table->At(idx);
+        Page *p = PageAt(idx);
         while (offset >= p->size) {
             offset -= p->size;
-            p = page_table->At(++idx);
+            p = PageAt(++idx);
         }
         cur_page = p;
         cur_offset = *offset_ptr - offset;
@@ -224,7 +224,7 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
     int len;
 
     if (page_index < pages->nb_pages()) {
-        Page *p = pages->page_table->At(page_index);
+        Page *p = pages->PageAt(page_index);
         len = MAX_PAGE_SIZE - p->size;
         if (len > size)
             len = size;
