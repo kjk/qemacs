@@ -294,7 +294,7 @@ void Pages::InsertLowLevel(int offset, const u8 *buf, int size)
     VerifySize();
 }
 
-// TODO: not sure I didn't make mistakes converting this to page_table as PtrVec
+// TODO: this was most likely broken during conversion, got it to crash in dired mode
 void Pages::InsertFrom(int dest_offset, Pages *src_pages, int src_offset, int size)
 {
     Page *p, *q;
@@ -380,11 +380,11 @@ void Pages::InsertFrom(int dest_offset, Pages *src_pages, int src_offset, int si
     VerifySize();
 }
 
-int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)
+int Pages::GetCharOffset(int offset, QECharset *charset)
 {
     int pos = 0;
-    for (int idx=0; idx < pages->nb_pages(); idx++) {
-        Page *p = pages->PageAt(idx);
+    for (int idx=0; idx < nb_pages(); idx++) {
+        Page *p = PageAt(idx);
         if (offset < p->size) {
             pos += get_chars(p->data, offset, charset);
             break;
@@ -396,11 +396,11 @@ int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)
     return pos;
 }
 
-int pages_goto_char(Pages *pages, QECharset *charset, int pos)
+int Pages::GotoChar(QECharset *charset, int pos)
 {
     int offset = 0;
-    for (int idx=0; idx < pages->nb_pages(); idx++) {
-        Page *p = pages->PageAt(idx);
+    for (int idx=0; idx < nb_pages(); idx++) {
+        Page *p = PageAt(idx);
         p->CalcChars(charset);
         if (pos < p->nb_chars) {
             offset += goto_char(p->data, pos, charset);

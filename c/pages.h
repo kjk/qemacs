@@ -120,6 +120,9 @@ public:
     void InsertLowLevel(int offset, const u8 *buf, int size);
     void InsertFrom(int dest_offset, Pages *src_pages, int src_offset, int size);
 
+    int  GetCharOffset(int offset, QECharset *charset);
+    int  GotoChar(QECharset *charset, int pos);
+
 };
 
 #if 0
@@ -131,9 +134,6 @@ static inline void copy_attrs(Page *src, Page *dst)
     dst->read_only = src->read_only;
 }
 #endif
-
-int  pages_get_char_offset(Pages *pages, int offset, QECharset *charset);
-int  pages_goto_char(Pages *pages, QECharset *charset, int pos);
 
 int  pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset);
 int  pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, int col1);

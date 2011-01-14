@@ -556,7 +556,7 @@ int eb_goto_char(EditBuffer *b, int pos)
         if (offset > eb_total_size(b))
             offset = eb_total_size(b);
     } else {
-        offset = pages_goto_char(&b->pages, b->charset, pos);
+        offset = b->pages.GotoChar(b->charset, pos);
     }
     return offset;
 }
@@ -573,7 +573,7 @@ int eb_get_char_offset(EditBuffer *b, int offset)
         if (pos > eb_total_size(b))
             pos = eb_total_size(b);
     } else {
-        pos = pages_get_char_offset(&b->pages, offset, b->charset);
+        pos = b->pages.GetCharOffset(offset, b->charset);
     }
     return pos;
 }
