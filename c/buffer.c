@@ -152,6 +152,9 @@ EditBuffer *eb_new(const char *name, int flags)
         return NULL;
     memset(b, 0, sizeof(EditBuffer));
 
+    // TODO: temporary, pages should be a pointer or EditBuffer a class,
+    // so that Pages constructor gets called
+    b->pages.page_table = new PtrVec<Page>();
     pstrcpy(b->name, sizeof(b->name), name);
     b->flags = flags;
 
@@ -721,7 +724,6 @@ int mmap_buffer(EditBuffer *b, const char *filename)
 {
     int len, file_size, n, size;
     u8 *file_ptr, *ptr;
-    Page *p;
 #ifdef WIN32
     HANDLE file_handle;
     HANDLE file_mapping;
@@ -763,8 +765,9 @@ int mmap_buffer(EditBuffer *b, const char *filename)
     }
 #endif
     n = (file_size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
-    p = (Page*)malloc(n * sizeof(Page));
-    if (!p) {
+    PtrVec<Page> *pages = new PtrVec<Page>(n);
+    Page **parr = pages->MakeSpaceAt(0, n);
+    if (!parr) {
 #ifdef WIN32
         UnmapViewOfFile((void*)file_ptr);
         CloseHandle(file_handle);
@@ -774,23 +777,24 @@ int mmap_buffer(EditBuffer *b, const char *filename)
 #endif
         return -1;
     }
-    b->pages.page_table = p;
+    b->pages.page_table = pages;
     b->pages.total_size = file_size;
-    b->pages.nb_pages = n;
     size = file_size;
     ptr = file_ptr;
     while (size > 0) {
         len = size;
         if (len > MAX_PAGE_SIZE)
             len = MAX_PAGE_SIZE;
+        Page *p = new Page();
         p->data = ptr;
         p->size = len;
         p->read_only = 1;
-        p->InvalidateAttrs();
         ptr += len;
         size -= len;
-        p++;
+        *parr++ = p;
+        --n;
     }
+    assert(n == 0);
     b->file_handle = file_handle;
 #ifdef WIN32
     b->file_mapping = file_mapping;

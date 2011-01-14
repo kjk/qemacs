@@ -22,7 +22,8 @@ public:
             newcap = needed;
 
         T ** newels = (T**)malloc(newcap * sizeof(T*));
-        memcpy(newels, els, newcap * sizeof(T*));
+        if (len > 0)
+            memcpy(newels, els, len * sizeof(T*));
         if (els != buf)
             free(els);
         els = newels;
@@ -54,8 +55,8 @@ public:
         T** res = &(els[idx]);
         int tomove = len - idx;
         if (tomove > 0) {
-            T* src = els + idx;
-            T* dst = els + idx + count;
+            T** src = els + idx;
+            T** dst = els + idx + count;
             memmove(dst, src, tomove * sizeof(T*));
         }
         len += count;
@@ -70,12 +71,20 @@ public:
         InsertAt(len);
     }
 
+    int Find(T *el) {
+        for (int i=0; i<len; i++) {
+            if (el == els[i])
+                return i;
+        }
+        return -1;
+    }
+
     T *RemoveAt(int idx, int count=1) {
         T *res = els[idx];
         int tomove = len - idx - count;
         if (tomove > 0) {
-            T *dst = els + idx;
-            T *src = els + idx + count;
+            T **dst = els + idx;
+            T **src = els + idx + count;
             memmove(dst, src, tomove * sizeof(T*));
         }
         len -= count;

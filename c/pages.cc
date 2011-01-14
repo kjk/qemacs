@@ -123,25 +123,26 @@ static int pages_offset_in_cache(Pages *pages, int offset)
 }
 
 /* find a page at a given offset */
-static Page *pages_find_page(Pages *pages, int *offset_ptr)
+static Page *pages_find_page(Pages *pages, int *offset_ptr, int *idx_ptr = NULL)
 {
-    Page *p;
-
     int offset = *offset_ptr;
-    if (pages_offset_in_cache(pages, offset)) {
-        *offset_ptr -= pages->cur_offset;
-        return pages->cur_page;
+    if (!pages_offset_in_cache(pages, offset)) {
+        int idx = 0;
+        PtrVec<Page> *page_table = pages->page_table;
+        Page *p = page_table->At(idx);
+        while (offset >= p->size) {
+            offset -= p->size;
+            p = page_table->At(++idx);
+        }
+        pages->cur_page = p;
+        pages->cur_offset = *offset_ptr - offset;
+        pages->cur_idx = idx;
     }
 
-    p = pages->page_table;
-    while (offset >= p->size) {
-        offset -= p->size;
-        p++;
-    }
-    pages->cur_page = p;
-    pages->cur_offset = *offset_ptr - offset;
-    *offset_ptr = offset;
-    return p;
+    *offset_ptr -= pages->cur_offset;
+    if (idx_ptr)
+        *idx_ptr = pages->cur_idx;
+    return pages->cur_page;
 }
 
 int pages_limit_size(Pages *pages, int offset, int size)
@@ -188,26 +189,23 @@ int pages_read(Pages *pages, int offset, void *buf, int size)
 
 void pages_delete(Pages *pages, int offset, int size)
 {
-    int n, len;
-    Page *del_start, *p;
+    int len;
 
     pages->total_size -= size;
-    p = pages_find_page(pages, &offset);
-    n = 0;
-    del_start = NULL;
+    int idx;
+    Page *p = pages_find_page(pages, &offset, &idx);
+    PtrVec<Page> *page_table = pages->page_table;
     while (size > 0) {
         len = p->size - offset;
         if (len > size)
             len = size;
         if (len == p->size) {
-            if (!del_start)
-                del_start = p;
             /* we cannot free if read only */
             if (!p->read_only)
                 free(p->data);
-            p++;
+            page_table->RemoveAt(idx);
+            p = page_table->At(idx);
             offset = 0;
-            n++;
         } else {
             p->PrepareForUpdate();
             memmove(p->data + offset, p->data + offset + len, 
@@ -216,19 +214,11 @@ void pages_delete(Pages *pages, int offset, int size)
             p->data = (u8*)realloc(p->data, p->size);
             offset += len;
             if (offset >= p->size) {
-                p++;
+                p = page_table->At(++idx);
                 offset = 0;
             }
         }
         size -= len;
-    }
-
-    /* now delete the requested pages */
-    if (n > 0) {
-        pages->nb_pages -= n;
-        memmove(del_start, del_start + n, 
-                (pages->page_table + pages->nb_pages - del_start) * sizeof(Page));
-        pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
     }
 
     /* the page cache is no longer valid */
@@ -239,11 +229,10 @@ void pages_delete(Pages *pages, int offset, int size)
    beginning of the page at page_index */
 static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
 {
-    int len, n;
-    Page *p;
+    int len;
 
-    if (page_index < pages->nb_pages) {
-        p = pages->page_table + page_index;
+    if (page_index < pages->nb_pages()) {
+        Page *p = pages->page_table->At(page_index);
         len = MAX_PAGE_SIZE - p->size;
         if (len > size)
             len = size;
@@ -258,37 +247,27 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
     }
     
     /* now add new pages if necessary */
-    n = (size + MAX_PAGE_SIZE - 1) / MAX_PAGE_SIZE;
-    if (0 == n)
-        return;
-
-    pages->nb_pages += n;
-    pages->page_table = (Page*)realloc(pages->page_table, pages->nb_pages * sizeof(Page));
-    p = pages->page_table + page_index;
-    memmove(p + n, p, sizeof(Page) * (pages->nb_pages - n - page_index));
     while (size > 0) {
         len = size;
         if (len > MAX_PAGE_SIZE)
             len = MAX_PAGE_SIZE;
-        p->size = len;
-        p->data = (u8*)malloc(len);
-        p->ClearAttrs();
-        memcpy(p->data, buf, len);
+        Page *p = new Page(buf, len);
         buf += len;
         size -= len;
-        p++;
+        pages->page_table->InsertAt(page_index++, p);
     }
 }
 
 /* We must have : 0 <= offset <= pages->total_size */
 void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
 {
-    int len, len_out, page_index;
-    Page *p = pages->page_table;
+    int len, len_out;
+    int page_index = -1;
     pages->total_size += size;
     if (offset > 0) {
+        int page_index;
         offset--;
-        p = pages_find_page(pages, &offset);
+        Page *p = pages_find_page(pages, &offset, &page_index);
         offset++;
 
         /* compute what we can insert in current page */
@@ -297,15 +276,14 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
             len = size;
         /* number of bytes to put in next pages */
         len_out = p->size + len - MAX_PAGE_SIZE;
-        page_index = p - pages->page_table;
         if (len_out > 0)
-            pages_insert(pages, page_index + 1, 
-                       p->data + p->size - len_out, len_out);
+            pages_insert(pages, page_index + 1, p->data + p->size - len_out, len_out);
         else
             len_out = 0;
+
         /* now we can insert in current page */
         if (len > 0) {
-            p = pages->page_table + page_index;
+            p = pages->page_table->At(page_index);
             p->PrepareForUpdate();
             p->size += len - len_out;
             p->data = (u8*)realloc(p->data, p->size);
@@ -314,9 +292,8 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
             buf += len;
             size -= len;
         }
-    } else {
-        page_index = -1;
     }
+
     /* insert the remaining data in the next pages */
     if (size > 0)
         pages_insert(pages, page_index + 1, buf, size);
@@ -325,14 +302,16 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
     pages->cur_page = NULL;
 }
 
+// TODO: not sure I didn't make mistakes converting this to page_table as PtrVec
 void pages_insert_from(Pages *dest_pages, int dest_offset,
                   Pages *src_pages, int src_offset, int size)
 {
-    Page *p, *p_start, *q;
+    Page *p, *q;
     int size_start, len, n, page_index;
+    int p_idx;
 
     /* insert the data from the first page if it is not completely selected */
-    p = pages_find_page(src_pages, &src_offset);
+    p = pages_find_page(src_pages, &src_offset, &p_idx);
     if (src_offset > 0) {
         len = p->size - src_offset;
         if (len > size)
@@ -340,50 +319,49 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
         pages_insert_lowlevel(dest_pages, dest_offset, p->data + src_offset, len);
         dest_offset += len;
         size -= len;
-        p++;
+        p = src_pages->page_table->At(++p_idx);
     }
 
     if (size == 0)
         return;
 
     /* cut the page at dest offset if needed */
+    page_index = dest_pages->nb_pages();
     if (dest_offset < dest_pages->total_size) {
-        q = pages_find_page(dest_pages, &dest_offset);
-        page_index = q - dest_pages->page_table;
+        q = pages_find_page(dest_pages, &dest_offset, &page_index);
         if (dest_offset > 0) {
             page_index++;
             pages_insert(dest_pages, page_index, q->data + dest_offset, q->size - dest_offset);
             /* must reload q because page_table may have been
                realloced */
-            q = dest_pages->page_table + page_index - 1;
+            q = dest_pages->page_table->At(page_index - 1);
             p->PrepareForUpdate();
             q->data = (u8*)realloc(q->data, dest_offset);
             q->size = dest_offset;
         }
-    } else {
-        page_index = dest_pages->nb_pages;
     }
 
     dest_pages->total_size += size;
 
     /* compute the number of complete pages to insert */
-    p_start = p;
+    n = 0;
+    int p_start = p_idx;
     size_start = size;
     while (size > 0 && p->size <= size) {
         size -= p->size;
-        p++;
+        ++n;
+        if (size > 0)
+            p = src_pages->page_table->At(++p_idx);
     }
-    n = p - p_start; /* number of pages to insert */
-    p = p_start;
+
     if (n > 0) {
-        /* add the pages */
-        dest_pages->nb_pages += n;
-        dest_pages->page_table = (Page*)realloc(dest_pages->page_table, dest_pages->nb_pages * sizeof(Page));
-        q = dest_pages->page_table + page_index;
-        memmove(q + n, q, sizeof(Page) * (dest_pages->nb_pages - n - page_index));
-        p = p_start;
+        Page **qarr = dest_pages->page_table->MakeSpaceAt(page_index, n);
+        p_idx = p_start;
+        p = src_pages->page_table->At(p_idx);
+        page_index += n;
         while (n > 0) {
             len = p->size;
+            q = new Page();
             q->size = len;
             if (p->read_only) {
                 /* simply copy the reference */
@@ -397,10 +375,9 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
                 memcpy(q->data, p->data, len);
             }
             n--;
-            p++;
+            p = src_pages->page_table->At(++p_idx);
             q++;
         }
-        page_index = q - dest_pages->page_table;
     }
     
     /* insert the remaning bytes */
@@ -415,31 +392,24 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
 int pages_get_char_offset(Pages *pages, int offset, QECharset *charset)
 {
     int pos = 0;
-    Page *p, *p_end;
-    p = pages->page_table;
-    p_end = p + pages->nb_pages;
-    for (;;) {
-        if (p >= p_end)
-            return pos;
-
-        if (offset < p->size)
+    for (int idx=0; idx < pages->nb_pages(); idx++) {
+        Page *p = pages->PageAt(idx);
+        if (offset < p->size) {
+            pos += get_chars(p->data, offset, charset);
             break;
+        }
         p->CalcChars(charset);
         pos += p->nb_chars;
         offset -= p->size;
-        p++;
     }
-    pos += get_chars(p->data, offset, charset);
     return pos;
 }
 
 int pages_goto_char(Pages *pages, QECharset *charset, int pos)
 {
-    Page *p, *p_end;
     int offset = 0;
-    p = pages->page_table;
-    p_end = pages->page_table + pages->nb_pages;
-    while (p < p_end) {
+    for (int idx=0; idx < pages->nb_pages(); idx++) {
+        Page *p = pages->PageAt(idx);
         p->CalcChars(charset);
         if (pos < p->nb_chars) {
             offset += goto_char(p->data, pos, charset);
@@ -447,7 +417,6 @@ int pages_goto_char(Pages *pages, QECharset *charset, int pos)
         } else {
             pos -= p->nb_chars;
             offset += p->size;
-            p++;
         }
     }
     return offset;
@@ -455,33 +424,26 @@ int pages_goto_char(Pages *pages, QECharset *charset, int pos)
 
 int pages_get_pos(Pages *pages, CharsetDecodeState *charset_state, int *line_ptr, int *col_ptr, int offset)
 {
-    Page *p, *p_end;
-    int line, col, line1, col1;
     QASSERT(offset >= 0);
-    line = 0;
-    col = 0;
-    p = pages->page_table;
-    p_end = p + pages->nb_pages;
-    for (;;) {
-        if (p >= p_end)
-            goto the_end;
-
-        if (offset < p->size)
+    int line = 0, col = 0;
+    for (int idx=0; idx < pages->nb_pages(); idx++) {
+        Page *p = pages->PageAt(idx);
+        if (offset < p->size) {
+            int line1, col1;
+            get_pos(p->data, offset, &line1, &col1, charset_state);
+            line += line1;
+            if (line1)
+                col = 0;
+            col += col1;
             break;
+        }
         p->CalcPos(charset_state);
         line += p->nb_lines;
         if (p->nb_lines)
             col = 0;
         col += p->col;
         offset -= p->size;
-        p++;
     }
-    get_pos(p->data, offset, &line1, &col1, charset_state);
-    line += line1;
-    if (line1)
-        col = 0;
-    col += col1;
-the_end:
     *line_ptr = line;
     *col_ptr = col;
     return line;
@@ -489,14 +451,12 @@ the_end:
 
 int pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, int col1)
 {
-    Page *p, *p_end;
     int line2, col2, offset1;
     u8 *q, *q_end;
 
     int line = 0, col = 0, offset = 0;
-    p = pages->page_table;
-    p_end = pages->page_table + pages->nb_pages;
-    while (p < p_end) {
+    for (int idx=0; idx < pages->nb_pages(); idx++) {
+        Page *p = pages->PageAt(idx);
         p->CalcPos(charset_state);
         line2 = line + p->nb_lines;
         if (p->nb_lines)
@@ -524,7 +484,6 @@ int pages_goto_pos(Pages *pages, CharsetDecodeState *charset_state, int line1, i
         line = line2;
         col = col2;
         offset += p->size;
-        p++;
     }
     return pages->total_size;
 }

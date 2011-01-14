@@ -21,6 +21,25 @@ public:
     /* the following is needed for char offset computation */
     int         nb_chars;
 
+    Page() {
+        data = NULL;
+        size = 0;
+        ClearAttrs();
+    }
+
+    Page(int size) {
+        data = (u8*)malloc(size);
+        this->size = size;
+        ClearAttrs();
+    }
+
+    Page(const u8 *buf, int size) {
+        data = (u8*)malloc(size);
+        this->size = size;
+        ClearAttrs();
+        memcpy(data, buf, size);
+    }
+
     void InvalidateAttrs() {
         valid_pos = 0;
         valid_char = 0;
@@ -39,16 +58,41 @@ public:
 
 };
 
-typedef struct Pages {
-    Page *  page_table;
-    int     nb_pages;
+class Pages {
+
+public:
+    PtrVec<Page> *page_table;
 
     /* page cache */
     Page *  cur_page;
     int     cur_offset;
+    int     cur_idx;
+
+    int     TotalSize() {
+        int size = 0;
+        for (int i=0; i<nb_pages(); i++) {
+            Page *p = page_table->At(i);
+            size += p->size;
+        }
+        return size;
+    }
 
     int     total_size; /* sum of Page.size in page_table */
-} Pages;
+
+    Pages() {
+        page_table = new PtrVec<Page>();
+    }
+
+    ~Pages() {
+        delete page_table;
+    }
+
+    int nb_pages() { return page_table->Count(); }
+
+    Page *PageAt(int idx) {
+        return page_table->At(idx);
+    }
+};
 
 #if 0
 static inline void copy_attrs(Page *src, Page *dst)
