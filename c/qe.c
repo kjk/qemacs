@@ -1579,9 +1579,7 @@ static int reload_buffer(EditState *s, EditBuffer *b, FILE *f1)
     }
 }
 
-
-static void do_set_mode_file(EditState *s, ModeDef *m, 
-                             ModeSavedData *saved_data, FILE *f1)
+static void do_set_mode_file(EditState *s, ModeDef *m, ModeSavedData *saved_data, FILE *f1)
 {
     int size, data_count;
     int saved_data_allocated = 0;
@@ -4096,6 +4094,7 @@ void switch_to_buffer(EditState *s, EditBuffer *b)
             /* if no more window uses the buffer, then save the data
                in the buffer */
             /* CG: Should free previous such data ? */
+            assert(b1->saved_data == NULL);
             b1->saved_data = s->mode->mode_save_data(s);
         }
         /* now we can close the mode */
@@ -7588,7 +7587,9 @@ void delete_windows()
     EditState *s = qe_state.first_window;
     while (s) {
         EditState *next = s->next_window;
+        EditBuffer *b = s->b;
         do_delete_window(s, 1);
+        eb_free(b);
         s = next;
     }
 }

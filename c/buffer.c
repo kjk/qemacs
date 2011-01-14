@@ -208,8 +208,8 @@ void eb_free(EditBuffer *b)
     b->save_log = 0;
     eb_delete(b, 0, eb_total_size(b));
     eb_log_reset(b);
+    free(b->saved_data);
 
-    /* suppress mmap file handle */
 #ifdef WIN32
     if (b->file_handle != 0) {
         CloseHandle(b->file_mapping);
