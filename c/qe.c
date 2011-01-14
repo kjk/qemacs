@@ -41,8 +41,10 @@ typedef struct QESettings {
 QESettings settings;
 
 #ifdef WIN32  /* TODO: should be _MSVC */
+#ifdef DEBUG
+#include <crtdbg.h>
+#endif
 #include <sys/stat.h>
-#include <windows.h> /* for MAX_PATH. TODO: figure out a better/portable way to get it */
 
 int S_ISDIR(int mode)
 {
@@ -62,8 +64,6 @@ int S_ISREG(int mode)
 #include <limits.h>
 #define  MAX_PATH    PATH_MAX
 #endif
-
-
 
 #include <assert.h>
 
@@ -7231,6 +7231,12 @@ void qe_init(void *opaque)
     int             i, optind;
     int             is_player;
 
+#ifdef WIN32
+#ifdef DEBUG
+        _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+        //_CrtSetBreakAlloc(421);
+#endif
+#endif
     qs->ec.function = "qe-init";
     qs->macro_key_index = -1; /* no macro executing */
     qs->ungot_key = -1; /* no unget key */
