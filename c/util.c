@@ -26,10 +26,12 @@
 #include <sys/timeb.h>
 #include <direct.h>
 
+#if 0
 __inline char *getcwd(char *buffer, int maxlen)
 {
     return _getcwd(buffer, maxlen);
 }
+#endif
 
 /* XXX: not suffisant, but OK for basic operations */
 int fnmatch(const char *pattern, const char *string, int flags)
