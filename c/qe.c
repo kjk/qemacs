@@ -7583,6 +7583,16 @@ static void settings_load(void)
 
 extern void free_css_ident();
 
+void delete_windows()
+{
+    EditState *s = qe_state.first_window;
+    while (s) {
+        EditState *next = s->next_window;
+        do_delete_window(s, 1);
+        s = next;
+    }
+}
+
 #ifdef CONFIG_WIN32
 int main1(int argc, char **argv)
 #else
@@ -7599,6 +7609,7 @@ int main(int argc, char **argv)
     settings_load();
     url_main_loop(qe_init, &args);
 
+    delete_windows();
     close_input_methods();
 
     dpy_close(&global_screen);

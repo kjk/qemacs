@@ -183,23 +183,27 @@ inline int close(int fd)
 }
 #endif
 
-void eb_free(EditBuffer *b)
+void eb_free_callbacks(EditBuffer *b)
 {
-    QEmacsState *qs = &qe_state;
-    EditBuffer **pb;
     EditBufferCallbackList *l, *l1;
-
-    /* call user defined close */
-    if (b->close)
-        b->close(b);
-
-    /* free each callback */
     for (l = b->first_callback; l != NULL;) {
         l1 = l->next;
         free(l);
         l = l1;
     }
     b->first_callback = NULL;
+}
+
+void eb_free(EditBuffer *b)
+{
+    QEmacsState *qs = &qe_state;
+    EditBuffer **pb;
+
+    /* call user defined close */
+    if (b->close)
+        b->close(b);
+
+    eb_free_callbacks(b);
 
     b->save_log = 0;
     eb_delete(b, 0, eb_total_size(b));
@@ -258,11 +262,9 @@ EditBuffer *eb_find_file(const char *filename)
     return NULL;
 }
 
-/************************************************************/
 /* callbacks */
 
-int eb_add_callback(EditBuffer *b, EditBufferCallback cb,
-                    void *opaque)
+int eb_add_callback(EditBuffer *b, EditBufferCallback cb, void *opaque)
 {
     EditBufferCallbackList *l;
 
@@ -276,8 +278,7 @@ int eb_add_callback(EditBuffer *b, EditBufferCallback cb,
     return 0;
 }
 
-void eb_free_callback(EditBuffer *b, EditBufferCallback cb,
-                      void *opaque)
+void eb_free_callback(EditBuffer *b, EditBufferCallback cb, void *opaque)
 {
     EditBufferCallbackList **pl, *l;
     

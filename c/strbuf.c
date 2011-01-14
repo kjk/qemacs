@@ -82,8 +82,10 @@ int strbuf_reserve(strbuf *buf, int size)
     new_data = (char*)malloc(size);
     if (!new_data)
         return 0;
-    if (buf->data)
+    if (buf->data) {
         memcpy(new_data, buf->data, buf->allocated);
+        free(buf->data);
+    }
     buf->allocated = size;
     buf->data = new_data;
     return 1;    

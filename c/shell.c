@@ -1007,8 +1007,7 @@ EditBuffer *new_shell_buffer(const char *name, const char *path,
     }
 
     /* launch shell */
-    if (run_process(path, argv, 
-                    &s->pty_fd, &s->pid) < 0) {
+    if (run_process(path, argv, &s->pty_fd, &s->pid) < 0) {
         eb_free(b);
         return NULL;
     }
