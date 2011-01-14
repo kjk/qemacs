@@ -900,13 +900,13 @@ json_object* json_from_file(char *filename)
     char        buf[JSON_FILE_BUF_SIZE];
     int         bytes_read;
 
-    pb = strbuf_new_with_size(1024);
-    if (!pb)
-        return NULL;
-
     fp = fopen(filename, "rb");
     if (!fp)
         return NULL;
+
+    pb = strbuf_new_with_size(1024);
+    if (!pb)
+        goto Exit;
 
     for (;;)
     {
@@ -914,12 +914,12 @@ json_object* json_from_file(char *filename)
         if (bytes_read > 0)
         {
             if (!strbuf_append(pb, buf, bytes_read))
-                goto Error;
+                goto Exit;
         }
         if (bytes_read < JSON_FILE_BUF_SIZE)
         {
             if (ferror(fp))
-                goto Error;
+                goto Exit;
             break;
         }
     }
@@ -931,10 +931,6 @@ Exit:
         fclose(fp);
     strbuf_free(pb);
     return obj;
-Error:
-    if (obj)
-        json_unref(obj);
-    goto Exit;
 }
 
 /* serialize 'obj' to a file 'filename'.
