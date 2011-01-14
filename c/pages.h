@@ -60,6 +60,13 @@ public:
 
 class Pages {
 
+private:
+    bool IsOffsetInCache(int offset) {
+        return (NULL != cur_page) && 
+               (offset >= cur_offset) && 
+               (offset < (cur_offset + cur_page->size));
+    }
+    
 public:
     PtrVec<Page> *page_table;
 
@@ -92,6 +99,9 @@ public:
     Page *PageAt(int idx) {
         return page_table->At(idx);
     }
+
+    Page *FindPage(int *offset_ptr, int *idx_ptr = NULL);
+
 };
 
 #if 0

@@ -115,34 +115,26 @@ void Page::CalcPos(CharsetDecodeState *charset_state)
     }
 }
 
-static int pages_offset_in_cache(Pages *pages, int offset)
-{
-    return (NULL != pages->cur_page) && 
-           (offset >= pages->cur_offset) && 
-           (offset < (pages->cur_offset + pages->cur_page->size));
-}
-
 /* find a page at a given offset */
-static Page *pages_find_page(Pages *pages, int *offset_ptr, int *idx_ptr = NULL)
+Page *Pages::FindPage(int *offset_ptr, int *idx_ptr)
 {
     int offset = *offset_ptr;
-    if (!pages_offset_in_cache(pages, offset)) {
+    if (!IsOffsetInCache(offset)) {
         int idx = 0;
-        PtrVec<Page> *page_table = pages->page_table;
         Page *p = page_table->At(idx);
         while (offset >= p->size) {
             offset -= p->size;
             p = page_table->At(++idx);
         }
-        pages->cur_page = p;
-        pages->cur_offset = *offset_ptr - offset;
-        pages->cur_idx = idx;
+        cur_page = p;
+        cur_offset = *offset_ptr - offset;
+        cur_idx = idx;
     }
 
-    *offset_ptr -= pages->cur_offset;
+    *offset_ptr -= cur_offset;
     if (idx_ptr)
-        *idx_ptr = pages->cur_idx;
-    return pages->cur_page;
+        *idx_ptr = cur_idx;
+    return cur_page;
 }
 
 int pages_limit_size(Pages *pages, int offset, int size)
@@ -158,7 +150,7 @@ void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
 {
     int len;
 
-    Page *p = pages_find_page(pages, &offset);
+    Page *p = pages->FindPage(&offset);
     while (size > 0) {
         len = p->size - offset;
         if (len > size)
@@ -193,7 +185,7 @@ void pages_delete(Pages *pages, int offset, int size)
 
     pages->total_size -= size;
     int idx;
-    Page *p = pages_find_page(pages, &offset, &idx);
+    Page *p = pages->FindPage(&offset, &idx);
     PtrVec<Page> *page_table = pages->page_table;
     while (size > 0) {
         len = p->size - offset;
@@ -267,7 +259,7 @@ void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size)
     if (offset > 0) {
         int page_index;
         offset--;
-        Page *p = pages_find_page(pages, &offset, &page_index);
+        Page *p = pages->FindPage(&offset, &page_index);
         offset++;
 
         /* compute what we can insert in current page */
@@ -311,7 +303,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
     int p_idx;
 
     /* insert the data from the first page if it is not completely selected */
-    p = pages_find_page(src_pages, &src_offset, &p_idx);
+    p = src_pages->FindPage(&src_offset, &p_idx);
     if (src_offset > 0) {
         len = p->size - src_offset;
         if (len > size)
@@ -328,7 +320,7 @@ void pages_insert_from(Pages *dest_pages, int dest_offset,
     /* cut the page at dest offset if needed */
     page_index = dest_pages->nb_pages();
     if (dest_offset < dest_pages->total_size) {
-        q = pages_find_page(dest_pages, &dest_offset, &page_index);
+        q = dest_pages->FindPage(&dest_offset, &page_index);
         if (dest_offset > 0) {
             page_index++;
             pages_insert(dest_pages, page_index, q->data + dest_offset, q->size - dest_offset);
