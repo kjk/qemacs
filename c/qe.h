@@ -695,7 +695,7 @@ typedef struct QEmacsState {
     QEditScreen *screen;
     struct EditState *first_window;
     struct EditState *active_window; /* window in which we edit */
-    struct EditBuffer *first_buffer;
+    EditBuffer *first_buffer;
     /* global layout info : DO NOT modify these directly. do_refresh
        does it */
     int status_height;

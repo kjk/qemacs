@@ -545,3 +545,13 @@ the_end:
    return ch;
 }
 
+#if 0
+static inline void copy_attrs(Page *src, Page *dst)
+{
+    dst->valid_pos = src->valid_pos;
+    dst->valid_char = src->valid_char;
+    dst->valid_colors = src->valid_colors;
+    dst->read_only = src->read_only;
+}
+#endif
+

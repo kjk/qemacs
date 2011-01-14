@@ -145,16 +145,8 @@ void set_buffer_name(EditBuffer *b, const char *name1)
 EditBuffer *eb_new(const char *name, int flags)
 {
     QEmacsState *qs = &qe_state;
-    EditBuffer *b;
+    EditBuffer *b = new EditBuffer();
 
-    b = (EditBuffer*)malloc(sizeof(EditBuffer));
-    if (!b)
-        return NULL;
-    memset(b, 0, sizeof(EditBuffer));
-
-    // TODO: temporary, pages should be a pointer or EditBuffer a class,
-    // so that Pages constructor gets called
-    b->pages.page_table = new PtrVec<Page>();
     pstrcpy(b->name, sizeof(b->name), name);
     b->flags = flags;
 
@@ -234,7 +226,7 @@ void eb_free(EditBuffer *b)
     }
     *pb = (*pb)->next;
 
-    free(b);
+    delete b;
 }
 
 EditBuffer *eb_find(const char *name)

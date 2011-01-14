@@ -94,6 +94,8 @@ public:
     int     total_size; /* sum of Page.size in page_table */
 
     Pages() {
+        cur_page = NULL;
+        total_size = 0;
         page_table = new PtrVec<Page>();
     }
 
@@ -128,19 +130,7 @@ public:
 
     int  NextChar(CharsetDecodeState *charset_state, int offset, int *next_offset);
     int  PrevChar(QECharset *charset, int offset, int *prev_offset);
-
 };
-
-#if 0
-static inline void copy_attrs(Page *src, Page *dst)
-{
-    dst->valid_pos = src->valid_pos;
-    dst->valid_char = src->valid_char;
-    dst->valid_colors = src->valid_colors;
-    dst->read_only = src->read_only;
-}
-#endif
-
 
 #endif
 

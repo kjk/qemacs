@@ -20,10 +20,10 @@ enum LogOperation {
     LOGOP_DELETE
 };
 
-struct EditBuffer;
+class EditBuffer;
 
 /* each buffer modification can be catched with this callback */
-typedef void (*EditBufferCallback)(struct EditBuffer *,
+typedef void (*EditBufferCallback)(EditBuffer *,
                                    void *opaque,
                                    enum LogOperation op,
                                    int offset,
@@ -44,7 +44,8 @@ typedef struct EditBufferCallbackList {
 #define BF_SAVING    0x0020  /* buffer is being saved */
 #define BF_DIRED     0x0100  /* buffer is interactive dired */
 
-typedef struct EditBuffer {
+class EditBuffer {
+public:
     Pages pages;
 
     int mark;       /* current mark (moved with text) */
@@ -70,7 +71,7 @@ typedef struct EditBuffer {
     /* undo system */
     int save_log;    /* if true, each buffer operation is loged */
     int log_new_index, log_current;
-    struct EditBuffer *log_buffer;
+    EditBuffer *log_buffer;
     int nb_logs;
 
     /* modification callbacks */
@@ -85,7 +86,7 @@ typedef struct EditBuffer {
     /* buffer polling & private data */
     void *priv_data;
     /* called when deleting the buffer */
-    void (*close)(struct EditBuffer *);
+    void (*close)(EditBuffer *);
 
     /* saved data from the last opened mode, needed to restore mode */
     /* CG: should instead keep a pointer to last window using this
@@ -93,10 +94,38 @@ typedef struct EditBuffer {
      */
     struct ModeSavedData *saved_data; 
 
-    struct EditBuffer *next; /* next editbuffer in qe_state buffer list */
+    EditBuffer *next; /* next editbuffer in qe_state buffer list */
     char name[256];     /* buffer name */
     char filename[MAX_FILENAME_SIZE]; /* file name */
-} EditBuffer;
+
+    EditBuffer() {
+        mark = 0;
+        modified = 0;
+#ifdef WIN32
+        file_handle = file_mapping = 0;
+#else
+        file_handle = 0;
+#endif
+        flags = 0;
+        data_type = NULL;
+        data = NULL;
+        charset = 0;
+        save_log = 0;
+        log_new_index = log_current = 0;
+        log_buffer = 0;
+        nb_logs = 0;
+        first_callback = NULL;
+        io_state = NULL;
+        probed = 0;
+        priv_data = 0;
+        close = NULL;
+        saved_data = NULL;
+        next = NULL;
+        name[0] = 0;
+        filename[0] = 0;
+    }
+
+};
 
 struct ModeProbeData;
 
