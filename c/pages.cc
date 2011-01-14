@@ -146,11 +146,11 @@ int Pages::LimitSize(int offset, int size)
     return size;
 }
 
-void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write)
+void Pages::ReadWrite(int offset, u8 *buf, int size, int do_write)
 {
     int len;
 
-    Page *p = pages->FindPage(&offset);
+    Page *p = FindPage(&offset);
     while (size > 0) {
         len = p->size - offset;
         if (len > size)
@@ -175,7 +175,7 @@ int pages_read(Pages *pages, int offset, void *buf, int size)
 {
     size = pages->LimitSize(offset, size);
     if (size > 0)
-        pages_rw(pages, offset, (u8*)buf, size, 0);
+        pages->ReadWrite(offset, (u8*)buf, size, 0);
     return size;
 }
 

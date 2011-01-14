@@ -113,6 +113,7 @@ public:
 
     int  LimitSize(int offset, int size);
     void Delete(int offset, int size);
+    void ReadWrite(int offset, u8 *buf, int size, int do_write);
 
 };
 
@@ -127,7 +128,6 @@ static inline void copy_attrs(Page *src, Page *dst)
 #endif
 
 
-void pages_rw(Pages *pages, int offset, u8 *buf, int size, int do_write);
 int  pages_read(Pages *pages, int offset, void *buf, int size);
 
 void pages_insert_lowlevel(Pages *pages, int offset, const u8 *buf, int size);

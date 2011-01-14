@@ -49,7 +49,7 @@ static int eb_rw(EditBuffer *b, int offset, u8 *buf, int size, int do_write)
         if (do_write)
             eb_addlog(b, LOGOP_WRITE, offset, size);
 
-        pages_rw(&b->pages, offset, buf, size, do_write);
+        b->pages.ReadWrite(offset, buf, size, do_write);
     }
     return size;
 }
