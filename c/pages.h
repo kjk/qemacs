@@ -72,6 +72,8 @@ private:
                (offset >= cur_offset) && 
                (offset < (cur_offset + cur_page->size));
     }
+
+    void Insert(int page_index, const u8 *buf, int size);
     
 public:
     PtrVec<Page> *page_table;

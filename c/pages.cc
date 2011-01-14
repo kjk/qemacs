@@ -219,12 +219,12 @@ void Pages::Delete(int offset, int size)
 
 /* internal function for insertion : 'buf' of size 'size' at the
    beginning of the page at page_index */
-static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
+void Pages::Insert(int page_index, const u8 *buf, int size)
 {
     int len;
 
-    if (page_index < pages->nb_pages()) {
-        Page *p = pages->PageAt(page_index);
+    if (page_index < nb_pages()) {
+        Page *p = PageAt(page_index);
         len = MAX_PAGE_SIZE - p->size;
         if (len > size)
             len = size;
@@ -246,7 +246,7 @@ static void pages_insert(Pages *pages, int page_index, const u8 *buf, int size)
         Page *p = new Page(buf, len);
         buf += len;
         size -= len;
-        pages->page_table->InsertAt(page_index++, p);
+        page_table->InsertAt(page_index++, p);
     }
 }
 
@@ -269,7 +269,7 @@ void Pages::InsertLowLevel(int offset, const u8 *buf, int size)
         /* number of bytes to put in next pages */
         len_out = p->size + len - MAX_PAGE_SIZE;
         if (len_out > 0)
-            pages_insert(this, page_index + 1, p->data + p->size - len_out, len_out);
+            Insert(page_index + 1, p->data + p->size - len_out, len_out);
         else
             len_out = 0;
 
@@ -288,15 +288,14 @@ void Pages::InsertLowLevel(int offset, const u8 *buf, int size)
 
     /* insert the remaining data in the next pages */
     if (size > 0)
-        pages_insert(this, page_index + 1, buf, size);
+        Insert(page_index + 1, buf, size);
 
     InvalidateCache();
     VerifySize();
 }
 
 // TODO: not sure I didn't make mistakes converting this to page_table as PtrVec
-void Pages::InsertFrom(int dest_offset,
-                  Pages *src_pages, int src_offset, int size)
+void Pages::InsertFrom(int dest_offset, Pages *src_pages, int src_offset, int size)
 {
     Page *p, *q;
     int size_start, len, n, page_index;
@@ -323,7 +322,7 @@ void Pages::InsertFrom(int dest_offset,
         q = FindPage(&dest_offset, &page_index);
         if (dest_offset > 0) {
             page_index++;
-            pages_insert(this, page_index, q->data + dest_offset, q->size - dest_offset);
+            Insert(page_index, q->data + dest_offset, q->size - dest_offset);
             /* must reload q because page_table may have been
                realloced */
             q = PageAt(page_index - 1);
@@ -374,7 +373,7 @@ void Pages::InsertFrom(int dest_offset,
     
     /* insert the remaning bytes */
     if (size > 0) {
-        pages_insert(this, page_index, p->data, size);
+        Insert(page_index, p->data, size);
     }
 
     InvalidateCache();
