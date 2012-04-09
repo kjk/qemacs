@@ -11,13 +11,12 @@ class Vec {
 
 public:
     void EnsureCap(int needed) {
-        if (this->cap > needed)
+        if (this->cap >= needed)
             return;
-        int newcap;
-        if (this->cap < 1024)
-            newcap = this->cap * 2;
-        else
+        int newcap = this->cap * 2;
+        if (this->cap > 1024)
             newcap = this->cap * 3 / 2;
+
         if (needed > newcap)
             newcap = needed;
 
@@ -63,8 +62,8 @@ public:
         return res;
     }
 
-    void InsertAt(int idx, T el) {
-        MakeSpaceAt(idx, 1)[0] = el;;
+    void InsertAt(int idx, T *el) {
+        MakeSpaceAt(idx, 1)[0] = *el;
     }
 
     void Append(T *el) {
@@ -79,7 +78,7 @@ public:
         return -1;
     }
 
-    T RemoveAt(int idx, int count=1) {
+    void RemoveAt(int idx, int count=1) {
         T res = els[idx];
         int tomove = len - idx - count;
         if (tomove > 0) {
@@ -88,7 +87,6 @@ public:
             memmove(dst, src, tomove * sizeof(T));
         }
         len -= count;
-        return res;
     }
 
     void Push(T *el) {

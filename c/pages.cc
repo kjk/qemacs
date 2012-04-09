@@ -246,7 +246,7 @@ void Pages::Insert(int page_index, const u8 *buf, int size)
         Page *p = new Page(buf, len);
         buf += len;
         size -= len;
-        page_table->InsertAt(page_index++, p);
+        page_table->InsertAt(page_index++, &p);
     }
 }
 
